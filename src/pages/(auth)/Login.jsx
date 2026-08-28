@@ -3,7 +3,9 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, ArrowLeft, ArrowRight, Eye, EyeOff, Wallet } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAuth } from '@/context/authContext';
 export default  function Login() {
+  const {login} = useAuth()
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,9 +25,7 @@ export default  function Login() {
     setIsLoading(true);
     const res = await fetch(`${url}/api/login`,{
       method:"POST",
-      headers:{
-        "Content-Type":"application/json"
-      },
+      headers:{"Content-Type":"application/json"},
       body:JSON.stringify({
         email:email,
         password:password
@@ -33,9 +33,11 @@ export default  function Login() {
     })
     const data = await res.json()
     if(data.status === 200){
-      toast.success(data.message)
       localStorage.setItem('token',data.token)
-      navigate('/dashboard')
+      login(data.user)
+      toast.success(data.message)
+      navigate('/dashboard/overview')
+
       return 
     }
     toast.error(data.message)
