@@ -1,7 +1,7 @@
 import React from 'react';
-import Navbar from '../../components/Navbar';
-import Footer from '../../components/Footer';
-import { AboutUs } from '../../components/marketing/about-ui';
+import Navbar from '@components/Navbar';
+import Footer from '@components/Footer';
+import { AboutUs } from '@/components/marketing/about-ui';
 
 export default function AboutPage() {
   return (

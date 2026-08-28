@@ -1,7 +1,7 @@
 import React from 'react';
-import Navbar from '../../components/Navbar';
-import Footer from '../../components/Footer';
-import ReportsUI from '../../components/marketing/reports-ui';
+import Navbar from '@components/Navbar';
+import Footer from '@components/Footer';
+import ReportsUI from '@/components/marketing/reports-ui';
 
 export default function ReportsPage() {
   return (

@@ -1,7 +1,7 @@
 import React from 'react';
-import Navbar from '../../components/Navbar';
-import Footer from '../../components/Footer';
-import FaqUI from '../../components/marketing/faq-ui';
+import Navbar from '@components/Navbar';
+import Footer from '@components/Footer';
+import FaqUI from '@/components/marketing/faq-ui';
 
 export default function FaqPage() {
   return (

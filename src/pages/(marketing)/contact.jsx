@@ -1,7 +1,7 @@
 import React from 'react';
-import Navbar from '../../components/Navbar';
-import Footer from '../../components/Footer';
-import ContactUI from '../../components/marketing/contact-ui';
+import Navbar from '@components/Navbar';
+import Footer from '@components/Footer';
+import ContactUI from '@/components/marketing/contact-ui';
 
 export default function ContactPage() {
   return (

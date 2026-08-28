@@ -1,10 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Wallet, Menu, X, ArrowRight } from 'lucide-react';
+import { DashboardItems } from '@/config/dashboard-link';
+import { useAuth } from '@/context/authContext';
+
 
 export default function Navbar() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [loading,setloading]=useState(false)
+  const [user,setUser] = useState(null)
+  const [logged,setlogged]= useState(true)
+  const [profileToggle, setProfileToggle] = useState(false)
+  const dashboardLinks  = DashboardItems
   const navLinks = [
     { label: 'About', href: '/about' },
     { label: 'Features', href: '/features' },
@@ -13,6 +20,34 @@ export default function Navbar() {
     { label: 'Contact', href: '/contact' },
   ];
 
+
+  useEffect(()=>{
+    const fetchUser = async ()=>{
+    const token = localStorage.getItem('token')
+    if(!token){
+      setlogged(false)
+      return 
+    }
+    setloading(true)
+    const res = await fetch("http://localhost:8000/api/current-user", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+    });
+    
+    if(!res.ok){
+      setlogged(false)
+      localStorage.removeItem('token')
+      return
+    }
+    const data = await res.json()
+    setUser(data.user)
+    setloading(false)
+    }
+    fetchUser()
+  },[])
+  
   return (
     <nav style={{
       position: 'sticky',
@@ -96,7 +131,8 @@ export default function Navbar() {
         </div>
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        {!logged?
+        (<div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <Link
             to="/login"
             className="btn btn-secondary"
@@ -123,6 +159,140 @@ export default function Navbar() {
             {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
         </div>
+        ):(
+          <>
+        {loading?(  <div
+            style={{
+              width: "36px",
+              height: "36px",
+              borderRadius: "50%",
+              background: "gray",
+              animation: "profileSkeleton 1.2s ease-in-out infinite",
+            }}
+          />):(<div
+            style={{
+              position: "relative",
+            }}
+          >
+            <img
+              src={user?.avatar}
+              alt={user?.name}
+              onClick={() => setProfileToggle((prev) => !prev)}
+              style={{
+                width: "36px",
+                height: "36px",
+                borderRadius: "50%",
+                objectFit: "cover",
+                cursor: "pointer",
+                border: "2px solid var(--border-subtle)",
+                display: "block",
+              }}
+            />
+
+            {profileToggle && (
+              <div
+                style={{
+                  position: "absolute",
+                  right: 0,
+                  top: "calc(100% + 10px)",
+                  width: "220px",
+                  padding: "0.6rem",
+                  backgroundColor: "black",
+                  border: "1px solid var(--border-subtle)",
+                  borderRadius: "12px",
+                  boxShadow: "0 10px 30px rgba(0, 0, 0, 0.15)",
+                  zIndex: 1000,
+                }}
+              >
+                {/* User Info */}
+                <div
+                  style={{
+                    padding: "0.6rem 0.7rem 0.8rem",
+                    borderBottom: "1px solid var(--border-subtle)",
+                    marginBottom: "0.5rem",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "0.9rem",
+                      fontWeight: 600,
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    {user?.name}
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: "0.75rem",
+                      color: "var(--text-muted)",
+                      marginTop: "3px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {user?.email}
+                  </div>
+                </div>
+
+                {/* Links */}
+                {dashboardLinks.map((item) => {
+                  const Icon = item.icon;
+
+                  return (
+                    <Link
+                      to={item.href}
+                      key={item.label}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        padding: "0.65rem 0.7rem",
+                        borderRadius: "8px",
+                        color: "var(--text-muted)",
+                        fontSize: "0.85rem",
+                        fontWeight: 500,
+                        textDecoration: "none",
+                        marginBottom: "2px",
+                      }}
+                    >
+                      <Icon size={17} strokeWidth={1.8} />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+
+                {/* Logout */}
+                <button
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    padding: "0.65rem 0.7rem",
+                    marginTop: "0.4rem",
+                    border: "none",
+                    borderTop: "1px solid var(--border-subtle)",
+                    paddingTop: "0.8rem",
+                    background: "transparent",
+                    color: "var(--danger, #ef4444)",
+                    fontSize: "0.85rem",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                >
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>)}
+          
+          </>
+          
+        )}
+        
       </div>
 
       {/* Mobile Drawer */}

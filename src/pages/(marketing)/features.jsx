@@ -1,7 +1,7 @@
 import React from 'react';
-import Navbar from '../../components/Navbar';
-import Footer from '../../components/Footer';
-import FeaturesUI from '../../components/marketing/features-ui';
+import Navbar from '@components/Navbar';
+import Footer from '@components/Footer';
+import FeaturesUI from '@/components/marketing/features-ui';
 
 export default function FeaturesPage() {
   return (
