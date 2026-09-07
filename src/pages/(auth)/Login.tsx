@@ -47,7 +47,7 @@ export default function Login({ onSwitchToRegister, onSwitchToForgotPassword, on
         if (onLoginSuccess) {
           onLoginSuccess(data);
         } else {
-          navigate('/dashboard/overview');
+          navigate('/dashboard');
         }
         return;
       }

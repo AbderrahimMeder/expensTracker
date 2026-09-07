@@ -2,22 +2,11 @@ import React, { useState } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import RecentTransactions from '@/components/dashboard/RecentTransactions';
 import AddTransactionModal from '@/components/dashboard/AddTransactionModal';
-import {
-  MOCK_TRANSACTIONS,
-} from '@/utils/dashboardUtils';
 import { Transaction, Currency } from '@/types';
 import { Plus } from 'lucide-react';
 
 export default function TransactionsPage() {
-  const [transactions, setTransactions] = useState<Transaction[]>(() => {
-    try {
-      const saved = localStorage.getItem('finora_transactions');
-      return saved ? JSON.parse(saved) : MOCK_TRANSACTIONS;
-    } catch {
-      return MOCK_TRANSACTIONS;
-    }
-  });
-
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [currency] = useState<Currency>(() => {
     return (localStorage.getItem('finora_currency') as Currency) || 'USD';
   });

@@ -1,24 +1,21 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User } from "../types";
+import { redirect, useNavigate } from "react-router-dom";
 
 interface AuthContextType {
   user: User | null;
   login: (userData: User) => void;
   logout: () => void;
-  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-
   useEffect(() => {
     const token = localStorage.getItem("token");
-
     if (!token) {
-      setLoading(false);
+      redirect("/login")
       return;
     }
 
@@ -38,12 +35,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         const data = await response.json();
-        setUser(data.data || data.user || data);
+        setUser(data.user);
       } catch (error) {
         console.error("Failed to fetch user:", error);
         setUser(null);
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -60,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

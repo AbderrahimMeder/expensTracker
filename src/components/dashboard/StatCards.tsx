@@ -8,7 +8,6 @@ import {
   Sparkles,
   LucideIcon
 } from 'lucide-react';
-import { formatCurrency } from '../../utils/dashboardUtils';
 import { DashboardStats } from '../../types';
 
 interface StatCardsProps {

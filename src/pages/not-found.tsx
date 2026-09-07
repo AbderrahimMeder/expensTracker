@@ -4,7 +4,6 @@ import { Home, ArrowLeft, Wallet } from 'lucide-react';
 
 export default function NotFound() {
   const navigate = useNavigate();
-
   return (
     <div style={{
       minHeight: '100vh',
