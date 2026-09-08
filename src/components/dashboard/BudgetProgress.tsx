@@ -1,13 +1,14 @@
 import React from 'react';
 import { Target, AlertTriangle, CheckCircle2, SlidersHorizontal } from 'lucide-react';
-import { formatCurrency, getCategoryDetails } from '../../utils/dashboardUtils';
-import { Budget, CategorySpending } from '../../types';
+import { formatCurrency, getCategoryDetails } from '@/utils/dashboardUtils';
+import { Budget, CategorySpending } from '@/types';
 
 interface BudgetProgressProps {
   budget?: Budget;
   totalExpenses?: number;
   categorySpending?: CategorySpending[];
   currency?: string;
+  rate:number;
   onOpenBudgetModal?: () => void;
 }
 
@@ -16,9 +17,10 @@ export default function BudgetProgress({
   totalExpenses = 0,
   categorySpending = [],
   currency = 'USD',
+  rate=1,
   onOpenBudgetModal
 }: BudgetProgressProps) {
-  const totalBudget = budget.totalBudget || 4500;
+  const totalBudget = (budget.totalBudget || 4500)*rate;
   const spent = totalExpenses;
   const remaining = Math.max(0, totalBudget - spent);
   const percentage = Math.min(100, Math.round((spent / (totalBudget || 1)) * 100));
@@ -82,16 +84,6 @@ export default function BudgetProgress({
           </p>
         </div>
 
-        {onOpenBudgetModal && (
-          <button
-            onClick={onOpenBudgetModal}
-            className="btn btn-secondary"
-            style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem', gap: '0.35rem' }}
-          >
-            <SlidersHorizontal size={13} />
-            <span>Adjust</span>
-          </button>
-        )}
       </div>
 
       {/* Main Budget Bar Card */}
@@ -108,9 +100,9 @@ export default function BudgetProgress({
           <div>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Spent so far</span>
             <div style={{ fontSize: '1.4rem', fontWeight: '800', color: '#ffffff', letterSpacing: '-0.02em' }}>
-              {formatCurrency(spent, currency)}
+              {(spent).toFixed(2)}{currency}
               <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '500', marginLeft: '6px' }}>
-                / {formatCurrency(totalBudget, currency)}
+              / {(totalBudget*rate).toFixed(2)}{currency}
               </span>
             </div>
           </div>

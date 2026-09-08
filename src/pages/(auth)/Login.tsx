@@ -41,6 +41,7 @@ export default function Login({ onSwitchToRegister, onSwitchToForgotPassword, on
       });
       const data = await res.json();
       if (data.status === 200) {
+        console.log(data)
         localStorage.setItem('token', data.token);
         login(data.user);
         toast.success(data.message);

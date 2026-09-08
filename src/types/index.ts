@@ -4,10 +4,11 @@ export interface User {
   email?: string;
   avatar?: string;
   profile?: string;
+  currency?: string;
   [key: string]: any;
 }
 
-export type TransactionType = 'income' | 'expense';
+export type TransactionType = 'INCOME' | 'EXPENSE';
 
 export interface Transaction {
   id: string;
@@ -63,6 +64,8 @@ export interface DashboardStats {
   savings: number;
   savingsRate: string;
   transactionCount: number;
+  Incomerate: number;
+  totalbalancerate: number;
 }
 
 export interface ExpenseEvolutionPoint {

@@ -12,7 +12,7 @@ export default function TransactionsPage() {
   });
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [modalType, setModalType] = useState<'income' | 'expense'>('expense');
+  const [modalType, setModalType] = useState<'INCOME' | 'EXPENSE'>('EXPENSE');
 
   const handleAddTransaction = (newTx: Transaction) => {
     setTransactions((prev) => {
@@ -26,13 +26,13 @@ export default function TransactionsPage() {
     });
   };
 
-  const openAddModal = (type: 'income' | 'expense' = 'expense') => {
+  const openAddModal = (type: 'INCOME' | 'EXPENSE' = 'EXPENSE') => {
     setModalType(type);
     setIsAddModalOpen(true);
   };
 
   return (
-    <DashboardLayout onOpenAddModal={(type) => openAddModal((type as 'income' | 'expense') || 'expense')}>
+    <DashboardLayout onOpenAddModal={(type) => openAddModal(type as 'INCOME' | 'EXPENSE')}>
       <div style={{ marginBottom: '2rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
           <div>
@@ -44,7 +44,7 @@ export default function TransactionsPage() {
             </p>
           </div>
           <button
-            onClick={() => openAddModal('expense')}
+            onClick={() => openAddModal('EXPENSE')}
             className="btn btn-primary"
             style={{ gap: '0.4rem' }}
           >
@@ -57,7 +57,7 @@ export default function TransactionsPage() {
       <RecentTransactions
         transactions={transactions}
         currency={currency}
-        onAddTransaction={(type) => openAddModal(type as 'income' | 'expense')}
+        onAddTransaction={(type) => openAddModal(type as 'INCOME' | 'EXPENSE')}
       />
 
       <AddTransactionModal

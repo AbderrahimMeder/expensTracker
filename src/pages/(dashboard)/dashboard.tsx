@@ -1,17 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/context/authContext';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import OverviewHeader from '@/components/dashboard/OverviewHeader';
 import StatCards from '@/components/dashboard/StatCards';
-import ExpenseChart from '@/components/dashboard/ExpenseChart';
-import CategoryBreakdown from '@/components/dashboard/CategoryBreakdown';
 import RecentTransactions from '@/components/dashboard/RecentTransactions';
 import BudgetProgress from '@/components/dashboard/BudgetProgress';
 import BudgetModal from '@/components/dashboard/BudgetModal';;
 import { Transaction, Budget, Currency } from '@/types';
-
+import {getExchangeRate} from '@/utils/exchange';
 export default function Dashboard() {
   const APP_URL = 'http://localhost:8000'
   const navigate = useNavigate();
@@ -25,7 +23,7 @@ export default function Dashboard() {
       const response = await fetch(`${APP_URL}/api/transactions`, {
         method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          'Accept': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
       });
@@ -41,19 +39,61 @@ export default function Dashboard() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
 
   const [budget, setBudget] = useState<Budget>();
-  const [stats,setstate]=useState(
-    {
-      totalBalance:0,
-      totalIncome:0,
-      totalExpenses:0,
-      savings:0,
-      savingsRate:"0%",
-      transactionCount:0,
+  const [rate,setrate]=useState(1);
+useEffect( () => {
+    const fetchrate = async()=>{
+      const rate =await getExchangeRate(user?.currency || "USD");
+      setrate(rate)
     }
-  )
-  const [currency, setCurrency] = useState<Currency>();
+    fetchrate();
+},[user])
+const stats = useMemo( () => {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth()+1).padStart(2, "0");
+      const previousMonth = new Date(now.getFullYear(),now.getMonth()-1,1);
+      const previousMonthStr =
+      `${previousMonth.getFullYear()}-${String(previousMonth.getMonth()+1).padStart(2, "0")}`;
 
-  const [selectedPeriod, setSelectedPeriod] = useState<string>('this-month');
+
+    const totalIncome = transactions
+        .filter(t => t.type === "INCOME")
+        .reduce((acc, t) => acc + Number(t.amount), 0);
+    const totalExpenses = transactions
+        .filter(t => t.type === "EXPENSE")
+        .reduce((acc, t) => acc + Number(t.amount), 0);
+      //this month 
+    const totalIncomeThisMouth = transactions
+        .filter(t => t.type === "INCOME" && t.date.startsWith(`${year}-${month}`))
+        .reduce((acc, t) => acc + Number(t.amount), 0);
+    const totalExpensesThisMouth = transactions.filter(
+      t =>( t.type === "EXPENSE") && t.date.startsWith(`${year}-${month}`)
+      ).reduce((acc, t) => acc + Number(t.amount), 0);
+      //last month 
+    const totalIncomelastMonth = transactions.filter(
+      t =>( t.type === "INCOME") && t.date.startsWith(`${previousMonthStr}`)
+      ).reduce((acc, t) => acc + Number(t.amount), 0);
+    const totalExpenseslastMonth = transactions.filter(
+      t =>( t.type === "EXPENSE") && t.date.startsWith(`${previousMonthStr}`)
+      ).reduce((acc, t) => acc + Number(t.amount), 0);
+    const savings = totalIncomeThisMouth-totalExpensesThisMouth
+    const savingsLastMounth = totalIncomelastMonth -totalExpenseslastMonth
+    const savingsRate = Number(savingsLastMounth) > 0
+        ? `${(((Number(savings)-Number(savingsLastMounth))/Number(savingsLastMounth))* 100).toFixed(1)}`
+        : "0";
+    const Incomerate = Number(totalIncomeThisMouth)/Number(totalIncome)*100
+    const totalbalancerate = Number(totalIncomeThisMouth-totalExpensesThisMouth)/Number(totalIncome-totalExpenses)*100
+    return {
+        totalBalance: totalIncome*rate-totalExpenses*rate,
+        totalIncome:totalIncomeThisMouth*rate,
+        totalExpenses:totalExpensesThisMouth*rate,
+        savings:savings*rate,
+        savingsRate,
+        transactionCount: transactions.length,
+        Incomerate,
+        totalbalancerate
+    };
+}, [transactions]);
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
@@ -81,7 +121,7 @@ export default function Dashboard() {
       />
 
       {/* 2. Top Metric Cards: Balance, Income, Expense, Savings */}
-      <StatCards stats={stats} currency={currency} />
+      <StatCards stats={stats} currency={user?.currency} />
 
       {/* 3. Main Dashboard Grid Layout */}
       <div style={{
@@ -100,13 +140,12 @@ export default function Dashboard() {
           }}
           className="dashboard-col-left"
         >
-          {/* 3. Expense Evolution Line/Area Chart */}
-          <ExpenseChart transactions={transactions} currency={currency} />
 
           {/* 4. Real-time Recent Transactions with Search and Filter */}
           <RecentTransactions
             transactions={transactions}
-            currency={currency}
+            currency={user?.currency}
+            rate={rate}
             />
         </div>
 
@@ -125,12 +164,10 @@ export default function Dashboard() {
             budget={budget}
             totalExpenses={stats.totalExpenses}
             categorySpending={categorySpending}
-            currency={currency}
+            currency={user?.currency}
+            rate={rate}
             onOpenBudgetModal={() => setIsBudgetModalOpen(true)}
           />
-
-          {/* 6. Donut Chart & Category Spending Breakdown */}
-          <CategoryBreakdown transactions={transactions} currency={currency} />
 
         </div>
       </div>
@@ -139,7 +176,7 @@ export default function Dashboard() {
         isOpen={isBudgetModalOpen}
         onClose={() => setIsBudgetModalOpen(false)}
         currentBudget={budget}
-        currency={currency}
+        currency={user?.currency}
         onSave={() => { }}
       />
 

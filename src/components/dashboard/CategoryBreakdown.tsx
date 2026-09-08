@@ -13,8 +13,8 @@ import {
   Tag,
   LucideIcon
 } from 'lucide-react';
-import { computeCategorySpending, formatCurrency } from '../../utils/dashboardUtils';
-import { Transaction } from '../../types';
+import { computeCategorySpending, formatCurrency } from '@/utils/dashboardUtils';
+import { Transaction } from '@/types';
 
 const ICON_COMPONENTS: Record<string, LucideIcon> = {
   Utensils,
