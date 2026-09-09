@@ -1,6 +1,7 @@
 import React, { useState, useEffect,useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { RefreshCw } from 'lucide-react';
 import { useAuth } from '@/context/authContext';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import OverviewHeader from '@/components/dashboard/OverviewHeader';
@@ -10,16 +11,20 @@ import BudgetProgress from '@/components/dashboard/BudgetProgress';
 import BudgetModal from '@/components/dashboard/BudgetModal';;
 import { Transaction, Budget, Currency } from '@/types';
 import {getExchangeRate} from '@/utils/exchange';
+import LoadingFallback from '@/App'
+import Loading from '@/components/ui/loading';
 export default function Dashboard() {
   const APP_URL = 'http://localhost:8000'
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [loading,setLoading]=useState(false);
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (!token) {
       navigate('/login')
     }
     const fetchdata = async () => {
+      setLoading(true)
       const response = await fetch(`${APP_URL}/api/transactions`, {
         method: "GET",
         headers: {
@@ -31,8 +36,10 @@ export default function Dashboard() {
       if (data.status == 200) {
         setTransactions(data.transactions);
       }
+      setLoading(false);
     }
     fetchdata();
+    
   }, [user])
 
   // Local storage state with initial fallbacks
@@ -40,13 +47,13 @@ export default function Dashboard() {
 
   const [budget, setBudget] = useState<Budget>();
   const [rate,setrate]=useState(1);
-useEffect( () => {
-    const fetchrate = async()=>{
-      const rate =await getExchangeRate(user?.currency || "USD");
-      setrate(rate)
-    }
-    fetchrate();
-},[user])
+  useEffect( () => {
+      const fetchrate = async()=>{
+        const rate =await getExchangeRate(user?.currency || "USD");
+        setrate(rate)
+      }
+      fetchrate();
+  },[user])
 const stats = useMemo( () => {
       const now = new Date();
       const year = now.getFullYear();
@@ -110,7 +117,7 @@ const stats = useMemo( () => {
   const categorySpending = [];
 
   const userName = user?.name || '';
-
+  if(loading) return <Loading/>
   return (
     <DashboardLayout>
       {/* 1. Overview Header with live controls */}
@@ -173,11 +180,11 @@ const stats = useMemo( () => {
       </div>
       {/* 9. Monthly Budget Configuration Modal */}
       <BudgetModal
-        isOpen={isBudgetModalOpen}
+         isOpen={isBudgetModalOpen}
         onClose={() => setIsBudgetModalOpen(false)}
         currentBudget={budget}
         currency={user?.currency}
-        onSave={() => { }}
+         onSave={() => { }}
       />
 
       {/* Page Responsive Styles */}

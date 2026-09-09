@@ -19,18 +19,6 @@ export default function OverviewHeader({
   onRefresh,
   isRefreshing
 }: OverviewHeaderProps) {
-  const currentDateFormatted = new Intl.DateTimeFormat('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  }).format(new Date());
-
-  const periods = [
-    { value: 'this-month', label: 'August 2026' },
-    { value: 'last-month', label: 'July 2026' },
-    { value: 'q3-2026', label: 'Q3 2026' },
-    { value: 'ytd', label: 'Year 2026' },
-  ];
 
   return (
     <div style={{

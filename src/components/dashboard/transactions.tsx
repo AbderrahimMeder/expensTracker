@@ -50,7 +50,7 @@ interface RecentTransactionsProps {
   onViewAll?: () => void;
 }
 
-export default function RecentTransactions({
+export default function Transactions({
   transactions = [],
   onAddTransaction,
   rate,
@@ -58,13 +58,18 @@ export default function RecentTransactions({
   const navigate = useNavigate();
   const {user} = useAuth();
   const [filterType, setFilterType] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   const filtered = transactions.filter((tx) => {
     const matchesType = filterType === 'ALL' || tx.type === filterType;
-    return matchesType;
+    const matchesSearch =
+      (tx.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (tx.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (tx.paymentMethod || '').toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesType && matchesSearch;
   });
 
-  const displayedTransactions = filtered.slice(0,4);
+  const displayedTransactions = filtered;
 
   return (
     <div className="glass-card" style={{
@@ -126,21 +131,33 @@ export default function RecentTransactions({
               </button>
             ))}
           </div>
-
-          <button
-            className="btn btn-secondary"
-            style={{
-              padding: '0.4rem 0.75rem',
-              fontSize: '0.75rem',
-              gap: '0.3rem',
-            }}
-          >
-            <Link to="/transactions" style={{textDecoration: 'none', color: 'inherit', padding: 0}} >View All</Link>
-            <ExternalLink size={13} />
-          </button>
         </div>
       </div>
 
+      {/* Mini Search Bar */}
+      <div style={{ position: 'relative' }}>
+        <Search
+          size={14}
+          color="var(--text-muted)"
+          style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)' }}
+        />
+        <input
+          type="text"
+          placeholder="Filter recent transactions by title, note, or payment method..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{
+            width: '100%',
+            background: '#0d0d0d',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-md)',
+            padding: '0.5rem 0.75rem 0.5rem 2.2rem',
+            color: '#ffffff',
+            fontSize: '0.8rem',
+            outline: 'none',
+          }}
+        />
+      </div>
 
       {/* Transactions List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>

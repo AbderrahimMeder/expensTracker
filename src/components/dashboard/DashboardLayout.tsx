@@ -38,7 +38,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     { label: 'Overview', path: '/dashboard', icon: LayoutDashboard, badge: null },
     { label: 'Transactions', path: '/transactions', icon: ArrowUpDown, badge: '10' },
     { label: 'Budgets', path: '/budgets', icon: Target, badge: null },
-    { label: 'Analytics & Reports', path: '/reports', icon: BarChart3, badge: null },
+    { label: 'Analytics & Reports', path: '/reports', icon: BarChart3, badge: '21' },
     { label: 'Settings', path: '/settings', icon: Settings, badge: null },
   ];
 
