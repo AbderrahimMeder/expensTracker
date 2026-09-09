@@ -1,115 +1,108 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { RefreshCw } from 'lucide-react';
 import { useAuth } from '@/context/authContext';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import OverviewHeader from '@/components/dashboard/OverviewHeader';
 import StatCards from '@/components/dashboard/StatCards';
-import ExpenseChart from '@/components/dashboard/ExpenseChart';
-import CategoryBreakdown from '@/components/dashboard/CategoryBreakdown';
 import RecentTransactions from '@/components/dashboard/RecentTransactions';
 import BudgetProgress from '@/components/dashboard/BudgetProgress';
-import AddTransactionModal from '@/components/dashboard/AddTransactionModal';
-import BudgetModal from '@/components/dashboard/BudgetModal';
-import {
-  MOCK_TRANSACTIONS,
-  DEFAULT_BUDGET,
-  computeDashboardStats,
-  computeCategorySpending
-} from '@/utils/dashboardUtils';
+import BudgetModal from '@/components/dashboard/BudgetModal';;
 import { Transaction, Budget, Currency } from '@/types';
-
+import {getExchangeRate} from '@/utils/exchange';
+import LoadingFallback from '@/App'
+import Loading from '@/components/ui/loading';
 export default function Dashboard() {
+  const APP_URL = 'http://localhost:8000'
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [loading,setLoading]=useState(false);
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      navigate('/login')
+    }
+    const fetchdata = async () => {
+      setLoading(true)
+      const response = await fetch(`${APP_URL}/api/transactions`, {
+        method: "GET",
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      if (data.status == 200) {
+        setTransactions(data.transactions);
+      }
+      setLoading(false);
+    }
+    fetchdata();
+    
+  }, [user])
 
   // Local storage state with initial fallbacks
-  const [transactions, setTransactions] = useState<Transaction[]>(() => {
-    try {
-      const saved = localStorage.getItem('finora_transactions');
-      return saved ? JSON.parse(saved) : MOCK_TRANSACTIONS;
-    } catch {
-      return MOCK_TRANSACTIONS;
-    }
-  });
+  const [transactions, setTransactions] = useState<Transaction[]>([])
 
-  const [budget, setBudget] = useState<Budget>(() => {
-    try {
-      const saved = localStorage.getItem('finora_budget');
-      return saved ? JSON.parse(saved) : DEFAULT_BUDGET;
-    } catch {
-      return DEFAULT_BUDGET;
-    }
-  });
+  const [budget, setBudget] = useState<Budget>();
+  const [rate,setrate]=useState(1);
+  useEffect( () => {
+      const fetchrate = async()=>{
+        const rate =await getExchangeRate(user?.currency || "USD");
+        setrate(rate)
+      }
+      fetchrate();
+  },[user])
+const stats = useMemo( () => {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth()+1).padStart(2, "0");
+      const previousMonth = new Date(now.getFullYear(),now.getMonth()-1,1);
+      const previousMonthStr =
+      `${previousMonth.getFullYear()}-${String(previousMonth.getMonth()+1).padStart(2, "0")}`;
 
-  const [currency, setCurrency] = useState<Currency>(() => {
-    return (localStorage.getItem('finora_currency') as Currency) || 'USD';
-  });
 
-  const [selectedPeriod, setSelectedPeriod] = useState<string>('this-month');
-  const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
-  const [addModalType, setAddModalType] = useState<'income' | 'expense'>('expense');
+    const totalIncome = transactions
+        .filter(t => t.type === "INCOME")
+        .reduce((acc, t) => acc + Number(t.amount), 0);
+    const totalExpenses = transactions
+        .filter(t => t.type === "EXPENSE")
+        .reduce((acc, t) => acc + Number(t.amount), 0);
+      //this month 
+    const totalIncomeThisMouth = transactions
+        .filter(t => t.type === "INCOME" && t.date.startsWith(`${year}-${month}`))
+        .reduce((acc, t) => acc + Number(t.amount), 0);
+    const totalExpensesThisMouth = transactions.filter(
+      t =>( t.type === "EXPENSE") && t.date.startsWith(`${year}-${month}`)
+      ).reduce((acc, t) => acc + Number(t.amount), 0);
+      //last month 
+    const totalIncomelastMonth = transactions.filter(
+      t =>( t.type === "INCOME") && t.date.startsWith(`${previousMonthStr}`)
+      ).reduce((acc, t) => acc + Number(t.amount), 0);
+    const totalExpenseslastMonth = transactions.filter(
+      t =>( t.type === "EXPENSE") && t.date.startsWith(`${previousMonthStr}`)
+      ).reduce((acc, t) => acc + Number(t.amount), 0);
+    const savings = totalIncomeThisMouth-totalExpensesThisMouth
+    const savingsLastMounth = totalIncomelastMonth -totalExpenseslastMonth
+    const savingsRate = Number(savingsLastMounth) > 0
+        ? `${(((Number(savings)-Number(savingsLastMounth))/Number(savingsLastMounth))* 100).toFixed(1)}`
+        : "0";
+    const Incomerate = Number(totalIncomeThisMouth)/Number(totalIncome)*100
+    const totalbalancerate = Number(totalIncomeThisMouth-totalExpensesThisMouth)/Number(totalIncome-totalExpenses)*100
+    return {
+        totalBalance: totalIncome*rate-totalExpenses*rate,
+        totalIncome:totalIncomeThisMouth*rate,
+        totalExpenses:totalExpensesThisMouth*rate,
+        savings:savings*rate,
+        savingsRate,
+        transactionCount: transactions.length,
+        Incomerate,
+        totalbalancerate
+    };
+}, [transactions]);
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-
-  // Authentication check
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      if (!isDev) {
-        navigate('/login');
-        return;
-      }
-    }
-
-    if (token) {
-      fetch('http://localhost:8000/api/current-user', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-        },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.status && data.status !== 200) {
-            navigate('/login');
-          }
-        })
-        .catch(() => {
-          // Token verification failed or API offline
-        });
-    }
-  }, [navigate]);
-
-  // Persist transactions
-  const handleAddTransaction = (newTx: Transaction) => {
-    setTransactions((prev) => {
-      const updated = [newTx, ...prev];
-      try {
-        localStorage.setItem('finora_transactions', JSON.stringify(updated));
-      } catch (err) {
-        console.error('Failed to save transaction to localStorage:', err);
-      }
-      return updated;
-    });
-  };
-
-  // Persist budget
-  const handleSaveBudget = (newBudget: Budget) => {
-    setBudget(newBudget);
-    try {
-      localStorage.setItem('finora_budget', JSON.stringify(newBudget));
-    } catch (err) {
-      console.error('Failed to save budget to localStorage:', err);
-    }
-  };
-
-  // Persist currency
-  const handleCurrencyChange = (newCurr: Currency) => {
-    setCurrency(newCurr);
-    localStorage.setItem('finora_currency', newCurr);
-  };
 
   // Refresh handler
   const handleRefresh = () => {
@@ -120,35 +113,22 @@ export default function Dashboard() {
     }, 600);
   };
 
-  // Modal open helper
-  const openAddModal = (type: 'income' | 'expense' = 'expense') => {
-    setAddModalType(type);
-    setIsAddModalOpen(true);
-  };
-
   // Computed financial stats
-  const stats = computeDashboardStats(transactions);
-  const categorySpending = computeCategorySpending(transactions);
+  const categorySpending = [];
 
-  const userName = user?.name || 'Alexander Wright';
-
+  const userName = user?.name || '';
+  if(loading) return <Loading/>
   return (
-    <DashboardLayout onOpenAddModal={(type) => openAddModal((type as 'income' | 'expense') || 'expense')}>
+    <DashboardLayout>
       {/* 1. Overview Header with live controls */}
       <OverviewHeader
         userName={userName}
-        selectedPeriod={selectedPeriod}
-        setSelectedPeriod={setSelectedPeriod}
-        currency={currency}
-        setCurrency={handleCurrencyChange}
-        onAddExpense={() => openAddModal('expense')}
-        onAddIncome={() => openAddModal('income')}
         onRefresh={handleRefresh}
         isRefreshing={isRefreshing}
       />
 
       {/* 2. Top Metric Cards: Balance, Income, Expense, Savings */}
-      <StatCards stats={stats} currency={currency} />
+      <StatCards stats={stats} currency={user?.currency} />
 
       {/* 3. Main Dashboard Grid Layout */}
       <div style={{
@@ -167,15 +147,13 @@ export default function Dashboard() {
           }}
           className="dashboard-col-left"
         >
-          {/* 3. Expense Evolution Line/Area Chart */}
-          <ExpenseChart transactions={transactions} currency={currency} />
 
           {/* 4. Real-time Recent Transactions with Search and Filter */}
           <RecentTransactions
             transactions={transactions}
-            currency={currency}
-            onAddTransaction={(type) => openAddModal(type as 'income' | 'expense')}
-          />
+            currency={user?.currency}
+            rate={rate}
+            />
         </div>
 
         {/* Right Column (Budgets, Breakdown, & Quick Actions) - 5 of 12 columns */}
@@ -193,32 +171,20 @@ export default function Dashboard() {
             budget={budget}
             totalExpenses={stats.totalExpenses}
             categorySpending={categorySpending}
-            currency={currency}
+            currency={user?.currency}
+            rate={rate}
             onOpenBudgetModal={() => setIsBudgetModalOpen(true)}
           />
 
-          {/* 6. Donut Chart & Category Spending Breakdown */}
-          <CategoryBreakdown transactions={transactions} currency={currency} />
-
         </div>
       </div>
-
-      {/* 8. Add Transaction Modal (Expense / Income) */}
-      <AddTransactionModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        initialType={addModalType}
-        currency={currency}
-        onSave={handleAddTransaction}
-      />
-
       {/* 9. Monthly Budget Configuration Modal */}
       <BudgetModal
-        isOpen={isBudgetModalOpen}
+         isOpen={isBudgetModalOpen}
         onClose={() => setIsBudgetModalOpen(false)}
         currentBudget={budget}
-        currency={currency}
-        onSave={handleSaveBudget}
+        currency={user?.currency}
+         onSave={() => { }}
       />
 
       {/* Page Responsive Styles */}

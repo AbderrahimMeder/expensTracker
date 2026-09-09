@@ -1,4 +1,4 @@
-import React, { useState, ReactNode } from 'react';
+import React, { useState, ReactNode, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Wallet,
@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/context/authContext';
-
+import { User } from '@/types';
 interface DashboardLayoutProps {
   children?: ReactNode;
   onOpenAddModal?: (type: 'expense' | 'income') => void;
@@ -24,11 +24,10 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout } = useAuth() as User;
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [collapsed] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-
   const handleLogout = () => {
     logout();
     toast.success('Successfully signed out');
@@ -37,15 +36,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const navLinks = [
     { label: 'Overview', path: '/dashboard', icon: LayoutDashboard, badge: null },
-    { label: 'Transactions', path: '/dashboard/transactions', icon: ArrowUpDown, badge: '10' },
-    { label: 'Budgets', path: '/dashboard/budgets', icon: Target, badge: null },
-    { label: 'Analytics & Reports', path: '/reports', icon: BarChart3, badge: null },
-    { label: 'Settings', path: '/dashboard/settings', icon: Settings, badge: null },
+    { label: 'Transactions', path: '/transactions', icon: ArrowUpDown, badge: '10' },
+    { label: 'Budgets', path: '/budgets', icon: Target, badge: null },
+    { label: 'Analytics & Reports', path: '/reports', icon: BarChart3, badge: '21' },
+    { label: 'Settings', path: '/settings', icon: Settings, badge: null },
   ];
 
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : (user?.email ? user.email.charAt(0).toUpperCase() : 'U');
-  const userName = user?.name || 'Alexander Wright';
-  const userEmail = user?.email || 'alexander.wright@finora.io';
+  const userName = user?.name || '';
+  const userEmail = user?.email || '';
 
   return (
     <div style={{
@@ -319,68 +318,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           top: 0,
           zIndex: 80,
         }}>
-          {/* Left: Mobile hamburger & search */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, maxWidth: '420px' }}>
-            <button
-              onClick={() => setMobileSidebarOpen(true)}
-              className="btn-icon mobile-menu-btn"
-              style={{ display: 'none' }}
-              aria-label="Open sidebar"
-            >
-              <Menu size={19} />
-            </button>
-
-            <div style={{
-              position: 'relative',
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-            }}>
-              <Search
-                size={16}
-                color="var(--text-muted)"
-                style={{ position: 'absolute', left: '0.85rem' }}
-              />
-              <input
-                type="text"
-                placeholder="Search transactions, categories, or budgets... (Ctrl+K)"
-                style={{
-                  width: '100%',
-                  background: '#141414',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: 'var(--radius-full)',
-                  padding: '0.55rem 1rem 0.55rem 2.4rem',
-                  color: '#ffffff',
-                  fontSize: '0.825rem',
-                  outline: 'none',
-                  transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = 'var(--accent-primary)';
-                  e.target.style.boxShadow = '0 0 12px rgba(16, 185, 129, 0.15)';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = 'var(--border-subtle)';
-                  e.target.style.boxShadow = 'none';
-                }}
-              />
-            </div>
-          </div>
-
           {/* Right Topbar Actions */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            {user?.profile && (
-              <Link to='/dashboard/settings' style={{ cursor: 'pointer', color: 'white', textDecoration: 'none', border: 'none' }}>
-                <img
-                  src={user.profile}
-                  alt={user.name || 'User'}
-                  width={30}
-                  height={30}
-                  style={{ borderRadius: "50%" }}
-                />
-              </Link>
-            )}
-
+          <div style={{ display: 'flex', position: 'absolute', right: '22px', top: '16px', alignItems: 'center', gap: '1rem' }}>
             {/* Notifications toggle */}
             <div style={{ position: 'relative' }}>
               <button

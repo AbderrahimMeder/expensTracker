@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
-import router from './config/router';
+import router from '@/config/router';
 import './index.css';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from "@/context/authContext";

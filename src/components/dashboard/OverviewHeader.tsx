@@ -16,27 +16,9 @@ interface OverviewHeaderProps {
 
 export default function OverviewHeader({
   userName,
-  selectedPeriod,
-  setSelectedPeriod,
-  currency = 'USD',
-  setCurrency,
-  onAddExpense,
-  onAddIncome,
   onRefresh,
   isRefreshing
 }: OverviewHeaderProps) {
-  const currentDateFormatted = new Intl.DateTimeFormat('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  }).format(new Date());
-
-  const periods = [
-    { value: 'this-month', label: 'August 2026' },
-    { value: 'last-month', label: 'July 2026' },
-    { value: 'q3-2026', label: 'Q3 2026' },
-    { value: 'ytd', label: 'Year 2026' },
-  ];
 
   return (
     <div style={{
@@ -59,7 +41,7 @@ export default function OverviewHeader({
             letterSpacing: '-0.03em',
             margin: 0,
           }}>
-            Welcome back <span style={{ color: 'var(--accent-primary)', marginLeft: '5px' }}>{userName || 'User'}</span>
+            Welcome back <span style={{ color: 'var(--accent-primary)', marginLeft: '5px' }}>{userName || ''}</span>
           </h1>
         </div>
       </div>
@@ -90,40 +72,6 @@ export default function OverviewHeader({
                 animation: isRefreshing ? 'spin 0.8s linear infinite' : 'none',
               }}
             />
-          </button>
-        )}
-
-        {/* Quick Add Buttons */}
-        {onAddExpense && (
-          <button
-            onClick={onAddExpense}
-            className="btn btn-secondary"
-            style={{
-              fontSize: '0.8rem',
-              padding: '0.45rem 0.85rem',
-              color: '#f87171',
-              borderColor: 'rgba(239, 68, 68, 0.3)',
-              background: 'rgba(239, 68, 68, 0.08)',
-              gap: '0.35rem',
-            }}
-          >
-            <TrendingDown size={14} />
-            <span>Add Expense</span>
-          </button>
-        )}
-
-        {onAddIncome && (
-          <button
-            onClick={onAddIncome}
-            className="btn btn-primary"
-            style={{
-              fontSize: '0.8rem',
-              padding: '0.45rem 0.85rem',
-              gap: '0.35rem',
-            }}
-          >
-            <TrendingUp size={14} />
-            <span>Add Income</span>
           </button>
         )}
       </div>

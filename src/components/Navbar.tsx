@@ -6,9 +6,9 @@ import { useAuth } from '@/context/authContext';
 import { User } from '@/types';
 
 export default function Navbar() {
+  const user =useAuth()?.user as User|null
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
   const [logged, setLogged] = useState(true);
   const [profileToggle, setProfileToggle] = useState(false);
   const dashboardLinks = DashboardItems;
@@ -28,27 +28,6 @@ export default function Navbar() {
       if (!token) {
         setLogged(false);
         return;
-      }
-      setLoading(true);
-      try {
-        const res = await fetch("http://localhost:8000/api/current-user", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json",
-          },
-        });
-        
-        if (!res.ok) {
-          setLogged(false);
-          localStorage.removeItem('token');
-          return;
-        }
-        const data = await res.json();
-        setUser(data.user || data.data || data);
-      } catch (err) {
-        setLogged(false);
-      } finally {
-        setLoading(false);
       }
     };
     fetchUser();
@@ -180,7 +159,7 @@ export default function Navbar() {
             ) : (
               <div style={{ position: "relative" }}>
                 <img
-                  src={user?.avatar || user?.profile || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100"}
+                  src={user?.avatar  || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100"}
                   alt={user?.name || "User"}
                   onClick={() => setProfileToggle((prev) => !prev)}
                   style={{

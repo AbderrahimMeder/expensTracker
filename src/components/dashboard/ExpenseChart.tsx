@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { BarChart2 } from 'lucide-react';
-import { generateExpenseEvolution, formatCurrency } from '../../utils/dashboardUtils';
 import { Transaction, ExpenseEvolutionPoint } from '../../types';
 
 interface ExpenseChartProps {
@@ -17,7 +16,7 @@ export default function ExpenseChart({ transactions = [], currency = 'USD' }: Ex
   const [timeframe, setTimeframe] = useState('30d');
   const [hoveredPoint, setHoveredPoint] = useState<PointWithCoords | null>(null);
 
-  const data = generateExpenseEvolution(transactions, timeframe);
+  const data =[];
 
   const maxExpense = Math.max(...data.map(d => d.amount), 1);
   const avgExpense = Math.round(data.reduce((acc, d) => acc + d.amount, 0) / (data.length || 1));
@@ -132,13 +131,13 @@ export default function ExpenseChart({ transactions = [], currency = 'USD' }: Ex
         <div>
           <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Average Spending</div>
           <div style={{ fontSize: '0.95rem', fontWeight: '700', color: '#ffffff' }}>
-            {formatCurrency(avgExpense, currency)}
+            {0}
           </div>
         </div>
         <div>
           <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Peak Expense</div>
           <div style={{ fontSize: '0.95rem', fontWeight: '700', color: '#ef4444' }}>
-            {formatCurrency(peakPoint?.amount || 0, currency)}
+            {0}
             <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginLeft: '4px' }}>({peakPoint?.label})</span>
           </div>
         </div>
@@ -179,7 +178,7 @@ export default function ExpenseChart({ transactions = [], currency = 'USD' }: Ex
                   fontSize="9"
                   fontFamily="var(--font-main)"
                 >
-                  {formatCurrency(Math.round(maxExpense * ratio), currency).split('.')[0]}
+                  {0}
                 </text>
               </g>
             );
@@ -281,7 +280,7 @@ export default function ExpenseChart({ transactions = [], currency = 'USD' }: Ex
               {hoveredPoint.date || hoveredPoint.label}:
             </span>
             <span style={{ fontSize: '0.85rem', fontWeight: '800', color: 'var(--accent-primary)' }}>
-              {formatCurrency(hoveredPoint.amount, currency)}
+              {0}
             </span>
           </div>
         )}

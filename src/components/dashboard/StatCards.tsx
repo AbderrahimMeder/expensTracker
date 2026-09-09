@@ -8,9 +8,7 @@ import {
   Sparkles,
   LucideIcon
 } from 'lucide-react';
-import { formatCurrency } from '../../utils/dashboardUtils';
-import { DashboardStats } from '../../types';
-
+import { DashboardStats } from '@/types';
 interface StatCardsProps {
   stats?: Partial<DashboardStats>;
   currency?: string;
@@ -33,54 +31,55 @@ interface StatCardConfig {
   gradient: string;
 }
 
-export default function StatCards({ stats, currency = 'USD' }: StatCardsProps) {
+export default function StatCards({ stats, currency }: StatCardsProps) {
   const {
     totalBalance = 0,
     totalIncome = 0,
     totalExpenses = 0,
     savings = 0,
     savingsRate = '0.0',
-  } = stats || {};
-
+    Incomerate = 0.0,
+    totalbalancerate =0.0
+  } =stats?? {};
   const cards: StatCardConfig[] = [
     {
       id: 'balance',
-      title: 'Total Balance',
+      title: 'in your wallet',
       subtitle: 'Available Net Worth',
       amount: totalBalance,
-      formattedAmount: formatCurrency(totalBalance, currency),
+      formattedAmount: `${Number(totalBalance).toFixed(2)} ${currency} `,
       icon: Wallet,
       iconColor: '#10b981',
       iconBg: 'rgba(16, 185, 129, 0.15)',
       borderColor: 'rgba(16, 185, 129, 0.3)',
       badge: {
-        text: '+14.2% vs last month',
+        text: `${totalbalancerate.toFixed(2)}% up from last month`,
         type: 'positive',
       },
       gradient: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(20, 20, 20, 0.6) 100%)',
     },
     {
       id: 'income',
-      title: 'Total Income',
+      title: 'This month Income',
       subtitle: 'Revenue & Inflows',
       amount: totalIncome,
-      formattedAmount: formatCurrency(totalIncome, currency),
+      formattedAmount: `${Number(totalIncome).toFixed(2)} ${currency} `,
       icon: TrendingUp,
       iconColor: '#3b82f6',
       iconBg: 'rgba(59, 130, 246, 0.15)',
       borderColor: 'rgba(59, 130, 246, 0.3)',
       badge: {
-        text: '+8.5% inflow',
+        text: `${Incomerate.toFixed(2)}% inflow`,
         type: 'positive',
       },
       gradient: 'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(20, 20, 20, 0.6) 100%)',
     },
     {
       id: 'expenses',
-      title: 'Total Expenses',
+      title: 'This Month Expense',
       subtitle: 'Outflows & Bills',
       amount: totalExpenses,
-      formattedAmount: formatCurrency(totalExpenses, currency),
+      formattedAmount: ` ${Number(totalExpenses).toFixed(2)} ${currency} `,
       icon: TrendingDown,
       iconColor: '#ef4444',
       iconBg: 'rgba(239, 68, 68, 0.15)',
@@ -96,7 +95,7 @@ export default function StatCards({ stats, currency = 'USD' }: StatCardsProps) {
       title: 'Savings & Buffer',
       subtitle: 'Net Stash Rate',
       amount: savings,
-      formattedAmount: formatCurrency(savings, currency),
+      formattedAmount: `${Number(savings).toFixed(2)} ${currency} `,
       icon: PiggyBank,
       iconColor: '#8b5cf6',
       iconBg: 'rgba(139, 92, 246, 0.15)',
@@ -226,10 +225,6 @@ export default function StatCards({ stats, currency = 'USD' }: StatCardsProps) {
                 {card.badge.type === 'highlight' && <Sparkles size={13} />}
                 <span>{card.badge.text}</span>
               </div>
-
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                MoM Target
-              </span>
             </div>
           </div>
         );

@@ -12,9 +12,9 @@ const Dashboard = lazy(() => import("@/pages/(dashboard)/dashboard"));
 const ForgotPassword = lazy(() => import("@/pages/(auth)/ForgotPassword"));
 const NotFound = lazy(() => import("../pages/not-found"));
 const Transactions = lazy(() => import("../pages/(dashboard)/transactions"));
+const TransactionDetails = lazy(() => import("../pages/(dashboard)/transactionsDetails"));
 const Faq = lazy(() => import("../pages/(marketing)/faq"));
 const Contact = lazy(() => import("../pages/(marketing)/contact"));
-
 const router = createBrowserRouter([
     {
         path: "/",
@@ -30,16 +30,12 @@ const router = createBrowserRouter([
                 element: <Dashboard />,
             },
             {
-                path: "dashboard/overview",
-                element: <Dashboard />,
-            },
-            {
-                path: "dashboard/transactions",
-                element: <Transactions />,
-            },
-            {
                 path: "transactions",
                 element: <Transactions />,
+            },
+            {
+                path: "transactions/:id",
+                element: <TransactionDetails />,
             },
             // Auth routes
             {
