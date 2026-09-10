@@ -90,6 +90,7 @@ const stats = useMemo( () => {
         : "0";
     const Incomerate = Number(totalIncomeThisMouth)/Number(totalIncome)*100
     const totalbalancerate = Number(totalIncomeThisMouth-totalExpensesThisMouth)/Number(totalIncome-totalExpenses)*100
+    localStorage.setItem("transactionsCount",transactions.length.toString());
     return {
         totalBalance: totalIncome*rate-totalExpenses*rate,
         totalIncome:totalIncomeThisMouth*rate,

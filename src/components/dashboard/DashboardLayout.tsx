@@ -33,10 +33,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     toast.success('Successfully signed out');
     navigate('/login');
   };
-
+  const transactionsCount = localStorage.getItem("transactionsCount");
   const navLinks = [
     { label: 'Overview', path: '/dashboard', icon: LayoutDashboard, badge: null },
-    { label: 'Transactions', path: '/transactions', icon: ArrowUpDown, badge: '10' },
+    { label: 'Transactions', path: '/transactions', icon: ArrowUpDown, badge: transactionsCount },
     { label: 'Budgets', path: '/budgets', icon: Target, badge: null },
     { label: 'Analytics & Reports', path: '/reports', icon: BarChart3, badge: '21' },
     { label: 'Settings', path: '/settings', icon: Settings, badge: null },

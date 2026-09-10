@@ -1,6 +1,5 @@
-import React, { Suspense } from 'react';
+import React, { Suspense} from 'react';
 import { Outlet } from 'react-router-dom';
-
 function LoadingFallback() {
   return (
     <div
