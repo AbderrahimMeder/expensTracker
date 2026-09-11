@@ -78,7 +78,6 @@ export default function Transactions({
   const [dateRange, setDateRange] = useState<string>('ALL');
   const [sortBy, setSortBy] = useState<string>('date-desc');
   const [searchQuery, setSearchQuery] = useState<string>('');
-
   // Pagination State
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
@@ -116,30 +115,7 @@ export default function Transactions({
     navigate(`/transactions/${id}/edit`);
   };
   // Category Helper
-  const getCategoryMeta = (catNameOrId?: string) => {
-    if (!catNameOrId) {
-      return { name: 'General', color: '#64748b', bg: 'rgba(100, 116, 139, 0.15)', icon: Tag };
-    }
-    const lower = catNameOrId.toLowerCase();
-    const found = DEFAULT_CATEGORIES.find(
-      (c) => c.id.toLowerCase() === lower || c.name.toLowerCase() === lower
-    );
-    if (found) {
-      const IconComponent = CATEGORY_ICON_MAP[found.icon] || Tag;
-      return {
-        name: found.name,
-        color: found.color,
-        bg: found.bg,
-        icon: IconComponent,
-      };
-    }
-    return {
-      name: catNameOrId,
-      color: '#10b981',
-      bg: 'rgba(16, 185, 129, 0.15)',
-      icon: Tag,
-    };
-  };
+  
 
   // Payment Method Helper
   const getPaymentIcon = (method?: string) => {
@@ -167,8 +143,7 @@ export default function Transactions({
         // Payment method filter
         const matchesPayment =
           selectedPaymentMethod === 'ALL' ||
-          (tx.payment_method || '').toLowerCase() === selectedPaymentMethod.toLowerCase();
-
+          (tx.payment_method || '').toLowerCase().replace(/_/g, ' ') === selectedPaymentMethod.toLowerCase();
         // Date range filter
         let matchesDate = true;
         if (dateRange !== 'ALL' && tx.date) {
@@ -245,7 +220,6 @@ export default function Transactions({
     selectedPaymentMethod !== 'ALL' ||
     dateRange !== 'ALL' ||
     searchQuery.trim().length > 0;
-
   const handleResetFilters = () => {
     setFilterType('ALL');
     setSelectedCategory('ALL');
