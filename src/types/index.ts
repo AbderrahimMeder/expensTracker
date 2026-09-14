@@ -13,24 +13,28 @@ export type TransactionType = 'INCOME' | 'EXPENSE';
 export interface Transaction {
   id: string;
   account_id: string;
-  
   type: TransactionType;
   amount: number;
   title?: string;
   description?: string;
   date: string;
   time?: string;
-  payment_method?: string;
   status?: string;
-  categories:{
+  categories?:{
     name:string;
     slug:string;
   };
+  payment_methods?:{
+    id:string;
+    name:string;
+    type:string;
+  }
 }
 
 export interface Category {
   id: string;
   name: string;
+  slug:string;
   type: TransactionType;
   icon: string;
   color: string;

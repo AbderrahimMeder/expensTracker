@@ -10,7 +10,7 @@ const Features = lazy(() => import("@/pages/(marketing)/features"));
 const Reports = lazy(() => import("@/pages/(marketing)/reports"));
 const Dashboard = lazy(() => import("@/pages/(dashboard)/dashboard"));
 const ForgotPassword = lazy(() => import("@/pages/(auth)/ForgotPassword"));
-const NotFound = lazy(() => import("../pages/not-found"));
+const NotFound = lazy(() => import("../pages/error"));
 const Transactions = lazy(() => import("../pages/(dashboard)/(transactions)/transactions"));
 const TransactionDetails = lazy(() => import("../pages/(dashboard)/(transactions)/transactionsDetails"));
 const TransactionCreate = lazy(() => import("../pages/(dashboard)/(transactions)/transactionsCreate"));
@@ -81,9 +81,13 @@ const router = createBrowserRouter([
                 path: 'contact',
                 element: <Contact />
             },
+            { // error pages
+                path: 'error',
+                element: <NotFound  />,
+            },
             { // 404 (Not Found)
                 path: "*",
-                element: <NotFound />,
+                element: <NotFound stateProps={404} />,
             },
         ],
     }

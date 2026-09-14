@@ -11,7 +11,6 @@ import BudgetProgress from '@/components/dashboard/BudgetProgress';
 import BudgetModal from '@/components/dashboard/BudgetModal';;
 import { Transaction, Budget, Currency } from '@/types';
 import {getExchangeRate} from '@/utils/exchange';
-import LoadingFallback from '@/App'
 import Loading from '@/components/ui/loading';
 export default function Dashboard() {
   const APP_URL = 'http://localhost:8000'
@@ -25,6 +24,7 @@ export default function Dashboard() {
     }
     const fetchdata = async () => {
       setLoading(true)
+      try{
       const response = await fetch(`${APP_URL}/api/transactions`, {
         method: "GET",
         headers: {
@@ -32,12 +32,24 @@ export default function Dashboard() {
           'Authorization': `Bearer ${token}`,
         },
       });
+
       const data = await response.json();
+      if(data.status==401){
+        toast.error('Session expired. Please log in again.');
+        navigate('/login')
+        localStorage.removeItem('token')
+      }
       if (data.status == 200) {
         setTransactions(data.transactions);
       }
       setLoading(false);
+    }catch(error){
+      navigate('/error',{state:{code:500}})
+      setLoading(false);
+    }finally{
+      setLoading(false);
     }
+  }
     fetchdata();
     
   }, [user])

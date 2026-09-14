@@ -28,6 +28,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [collapsed] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  useEffect(()=>{
+    const token = localStorage.getItem('token');
+    if(!token){
+      navigate('/login');
+    }
+  },[])
   const handleLogout = () => {
     logout();
     toast.success('Successfully signed out');

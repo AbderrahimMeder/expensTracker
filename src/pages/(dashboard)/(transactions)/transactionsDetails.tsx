@@ -4,7 +4,6 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Transaction } from '@/types';
 import { useAuth } from '@/context/authContext';
 import { getExchangeRate } from '@/utils/exchange';
-import { DEFAULT_CATEGORIES, INITIAL_TRANSACTIONS } from '@/data/initialData';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft,
@@ -122,22 +121,13 @@ export default function TransactionDetails() {
             setTransaction(data.data);
           } else if (data.id) {
             setTransaction(data);
-          } else {
-            // Check fallback from INITIAL_TRANSACTIONS if mock id
-            const fallback = INITIAL_TRANSACTIONS.find((t) => t.id === id);
-            setTransaction(fallback || null);
           }
           setLoading(false);
         }
       } catch (error) {
-        console.warn('API transaction fetch failed, attempting local fallback:', error);
+        console.error('API transaction fetch failed:', error);
         if (isMounted) {
-          const fallback = INITIAL_TRANSACTIONS.find((t) => t.id === id);
-          if (fallback) {
-            setTransaction(fallback);
-          } else {
-            setTransaction(null);
-          }
+          setTransaction(null);
           setLoading(false);
         }
       }
@@ -160,27 +150,8 @@ export default function TransactionDetails() {
         bg: 'rgba(16, 185, 129, 0.15)',
       };
     }
-
-    const catId = (transaction.category || '').toLowerCase();
-    const found = DEFAULT_CATEGORIES.find(
-      (c) =>
-        c.id.toLowerCase() === catId ||
-        c.name.toLowerCase() === catId ||
-        c.id.toLowerCase().replace('cat-', '') === catId
-    );
-
-    if (found) {
-      const IconComponent = CATEGORY_ICON_MAP[found.icon] || Tag;
-      return {
-        name: found.name,
-        icon: IconComponent,
-        color: found.color,
-        bg: found.bg,
-      };
-    }
-
     return {
-      name: transaction.category || 'General Expense',
+      name: transaction?.categories?.name || 'General Expense',
       icon: Tag,
       color: '#10b981',
       bg: 'rgba(16, 185, 129, 0.15)',
@@ -189,20 +160,20 @@ export default function TransactionDetails() {
 
   // Payment Method icon & label
   const paymentMethodInfo = useMemo(() => {
-    const rawMethod = (transaction?.paymentMethod || 'Credit Card').toLowerCase();
-    if (rawMethod.includes('bank') || rawMethod.includes('transfer') || rawMethod.includes('wire')) {
-      return { icon: Building2, label: transaction?.paymentMethod || 'Bank Transfer', badge: 'ACH / Direct Wire' };
+    const rawMethod = (transaction?.payment_methods?.type || 'Credit Card').toLowerCase();
+    if (rawMethod.includes('BANK') || rawMethod.includes('transfer') || rawMethod.includes('wire')) {
+      return { icon: Building2, label: transaction?.payment_methods?.type || 'Bank Transfer', badge: 'ACH / Direct Wire' };
     }
-    if (rawMethod.includes('paypal')) {
+    if (rawMethod.includes('ONLINE')) {
       return { icon: Wallet, label: 'PayPal Account', badge: 'Digital Wallet' };
     }
     if (rawMethod.includes('crypto') || rawMethod.includes('usdt') || rawMethod.includes('btc')) {
-      return { icon: Coins, label: transaction?.paymentMethod || 'Crypto Wallet', badge: 'Decentralized' };
+      return { icon: Coins, label:transaction?.payment_methods?.type || 'Crypto Wallet', badge: 'Decentralized' };
     }
-    if (rawMethod.includes('cash')) {
+    if (rawMethod.includes('CASH')) {
       return { icon: DollarSign, label: 'Physical Cash', badge: 'Direct Settlement' };
     }
-    return { icon: CreditCard, label: transaction?.paymentMethod || 'Credit Card', badge: 'Encrypted Token' };
+    return { icon: CreditCard, label: transaction?.payment_methods?.type || 'Credit Card', badge: 'Encrypted Token' };
   }, [transaction]);
 
   const isIncome = (transaction?.type || '').toUpperCase() === 'INCOME';
@@ -667,11 +638,19 @@ export default function TransactionDetails() {
                   <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Transaction Timestamp</span>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: '0.85rem', fontWeight: '600', color: '#ffffff' }}>
-                      {transaction.date}
+                      {new Date(transaction.date).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                      }) }
                     </div>
                     {transaction.time && (
                       <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>
-                        {transaction.time} (UTC)
+                        {new Date(transaction.time).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit',
+                        }) } (UTC)
                       </div>
                     )}
                   </div>

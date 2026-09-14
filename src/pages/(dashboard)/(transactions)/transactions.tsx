@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Transactions from '@/components/dashboard/transactions';
 import { Transaction, Currency } from '@/types';
@@ -6,20 +6,27 @@ import { Plus, ArrowUpRight, ArrowDownLeft, Wallet, Receipt, RefreshCw } from 'l
 import { useNavigate, Link } from 'react-router-dom';
 import { getExchangeRate } from '@/utils/exchange';
 import { useAuth } from '@/context/authContext';
-import Loading from '@/components/ui/loading';
+import { LoadingTransaction } from '@/components/ui/loading';
 import toast from 'react-hot-toast';
 
 export default function TransactionsPage() {
   const navigate = useNavigate();
   const APP_URL = 'http://localhost:8000';
-  const { user } = useAuth();
+  const { user,loading } = useAuth();
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [rate, setRate] = useState<number>(1);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loadingPage,setLoadingPage] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-
+  const [fetchagain,setFetchagain] = useState<boolean>(false);
+  const time = useRef(0);
+  const interval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timeElement = useRef<HTMLSpanElement>(null);
+  const buttonElement = useRef<HTMLButtonElement>(null);
   const fetchTransactions = async (isManualRefresh = false) => {
+    console.log('fetch');
+    time.current=0
+    setFetchagain(true)
     const token = localStorage.getItem('token');
     if (!token) {
       navigate('/login');
@@ -28,8 +35,6 @@ export default function TransactionsPage() {
 
     if (isManualRefresh) {
       setIsRefreshing(true);
-    } else {
-      setLoading(true);
     }
 
     try {
@@ -43,7 +48,6 @@ export default function TransactionsPage() {
       const data = await response.json();
       if (response.ok && data.status === 200 && data.transactions) {
         setTransactions(data.transactions);
-        console.log(data.transactions);
         if (isManualRefresh) {
           toast.success('Ledger updated with latest transactions!');
         }
@@ -51,19 +55,27 @@ export default function TransactionsPage() {
         setTransactions(data.transactions);
       }
     } catch (error) {
-      console.error('Failed to fetch transactions:', error);
+      navigate('/error',{state:{code:500}})
       if (isManualRefresh) {
         toast.error('Could not refresh transactions');
       }
     } finally {
-      setLoading(false);
       setIsRefreshing(false);
+      setLoadingPage(false);
+      setFetchagain(false)
     }
   };
 
   useEffect(() => {
-    fetchTransactions();
-  }, []);
+    if(!loading){
+      setLoadingPage(true);
+    }
+    if(user&&!loading){
+      if(!user) navigate('/login')
+      else fetchTransactions();
+      
+    }
+  }, [user, loading, navigate]);
 
   // Fetch exchange rate for user currency
   useEffect(() => {
@@ -82,6 +94,45 @@ export default function TransactionsPage() {
     };
   }, [user]);
 
+const startTimer = () => {
+  if (interval.current) return;
+
+  time.current = 1;
+
+  if (timeElement.current) {
+    timeElement.current.textContent = `${time.current}s`;
+  }
+
+  if (buttonElement.current) {
+    buttonElement.current.disabled = true;
+    buttonElement.current.style.cursor = 'not-allowed';
+    buttonElement.current.style.opacity = '0.5';
+  }
+
+  interval.current = setInterval(() => {
+    time.current += 1;
+
+    if (timeElement.current) {
+      timeElement.current.textContent = `${time.current}s`;
+    }
+
+    if (time.current >= 30) {
+      clearInterval(interval.current!);
+      interval.current = null;
+      time.current = 0;
+
+      if (timeElement.current) {
+        timeElement.current.textContent = 'Refresh';
+      }
+
+      if (buttonElement.current) {
+        buttonElement.current.disabled = false;
+        buttonElement.current.style.cursor = 'pointer';
+        buttonElement.current.style.opacity = '1';
+      }
+    }
+  }, 1000);
+};
   // Financial Stats calculation
   const stats = useMemo(() => {
     const totalIncome = transactions
@@ -106,7 +157,7 @@ export default function TransactionsPage() {
 
   const userCurrency = user?.currency || 'USD';
 
-  if (loading) return <Loading />;
+  if (loadingPage) return <LoadingTransaction hight={150} />;
 
   return (
     <DashboardLayout>
@@ -164,7 +215,8 @@ export default function TransactionsPage() {
           {/* Action Buttons */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <button
-              onClick={() => fetchTransactions(true)}
+              onClick={() => {fetchTransactions(true);startTimer()}}
+              ref={buttonElement}
               className="btn btn-secondary"
               style={{ padding: '0.65rem 0.85rem', gap: '0.4rem' }}
               title="Refresh ledger"
@@ -175,7 +227,7 @@ export default function TransactionsPage() {
                   animation: isRefreshing ? 'spin 0.8s linear infinite' : 'none',
                 }}
               />
-              <span>Refresh</span>
+              <span ref={timeElement}>Refresh</span>
             </button>
 
             <Link
@@ -201,6 +253,7 @@ export default function TransactionsPage() {
           transactions={transactions}
           currency={userCurrency}
           rate={rate}
+          fetchagain={fetchagain}
         />
       </div>
     </DashboardLayout>

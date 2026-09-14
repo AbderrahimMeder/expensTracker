@@ -35,8 +35,8 @@ import {
 import { useNavigate, Link } from 'react-router-dom';
 import { Transaction } from '@/types';
 import { useAuth } from '@/context/authContext';
-import { DEFAULT_CATEGORIES } from '@/data/initialData';
 import toast from 'react-hot-toast';
+import Loading, { LoadingTransaction } from '../ui/loading';
 
 const CATEGORY_ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>> = {
   Utensils,
@@ -58,14 +58,13 @@ interface TransactionsProps {
   transactions?: Transaction[];
   currency?: string;
   rate?: number;
-  onAddTransaction?: (type: 'INCOME' | 'EXPENSE') => void;
-  onDeleteTransaction?: (id: string) => void;
+  fetchagain:boolean;
 }
 
 export default function Transactions({
   transactions = [],
   rate = 1,
-  onDeleteTransaction,
+  fetchagain
 }: TransactionsProps) {
   const APP_URL = 'http://localhost:8000';
   const navigate = useNavigate();
@@ -86,7 +85,7 @@ export default function Transactions({
       'ALL',
       ...new Set(
         transactions
-          .map((t) => t.payment_method?.replace(/_/g, ' '))
+          .map((t) => t.payment_methods?.name??''.replace(/_/g, ' '))
           .filter(Boolean)
       ),
     ];
@@ -143,7 +142,7 @@ export default function Transactions({
         // Payment method filter
         const matchesPayment =
           selectedPaymentMethod === 'ALL' ||
-          (tx.payment_method || '').toLowerCase().replace(/_/g, ' ') === selectedPaymentMethod.toLowerCase();
+          (tx.payment_methods.name || '').toLowerCase().replace(/_/g, ' ') === selectedPaymentMethod.toLowerCase();
         // Date range filter
         let matchesDate = true;
         if (dateRange !== 'ALL' && tx.date) {
@@ -173,7 +172,7 @@ export default function Transactions({
           (tx.title || '').toLowerCase().includes(query) ||
           (tx.description || '').toLowerCase().includes(query) ||
           (tx.categories.name || '').toLowerCase().includes(query) ||
-          (tx.payment_method || '').toLowerCase().includes(query) ||
+          (tx.payment_methods.name || '').toLowerCase().includes(query) ||
           (tx.date || '').toLowerCase().includes(query) ||
           String(tx.amount || '').includes(query);
 
@@ -246,19 +245,21 @@ export default function Transactions({
       user?.currency || 'USD',
       tx.date || '',
       tx.time || '',
-      `"${(tx.payment_method || '').replace(/"/g, '""')}"`,
+      `"${(tx.payment_methods.name || '').replace(/"/g, '""')}"`,
       tx.status || 'Completed',
       `"${(tx.description || '').replace(/"/g, '""')}"`,
     ]);
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.setAttribute('href', url);
     link.setAttribute('download', `Finora_Transactions_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
     toast.success('Transactions CSV exported successfully!');
   };
 
@@ -597,9 +598,9 @@ export default function Transactions({
           <div style={{ textAlign: 'right' }}>Amount ({userCurrency})</div>
           <div style={{ textAlign: 'center' }}>Actions</div>
         </div>
-
-        {/* List Content */}
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
+        {fetchagain?
+        (<LoadingTransaction hight={50} />)
+        :(<div style={{ display: 'flex', flexDirection: 'column' }}>
           {paginatedTransactions.length === 0 ? (
             <div
               style={{
@@ -661,7 +662,7 @@ export default function Transactions({
           ) : (
             paginatedTransactions.map((tx, idx) => {
               const isIncome = (tx.type || '').toUpperCase() === 'INCOME';
-              const MethodIcon = getPaymentIcon(tx.payment_method);
+              const MethodIcon = getPaymentIcon(tx.payment_methods?.name);
               const converted = (Number(tx.amount || 0) * rate).toFixed(2);
 
               return (
@@ -811,7 +812,7 @@ export default function Transactions({
                       }}  
                     >
                       <MethodIcon size={12} color="var(--text-muted)" />
-                      <span>{tx.payment_method?.toLocaleLowerCase().replace(/_/g, ' ') || '******'}</span>
+                      <span>{tx.payment_methods?.name?.toLocaleLowerCase().replace(/_/g, ' ')|| '******'}</span>
                     </span>
                   </div>
 
@@ -929,28 +930,14 @@ export default function Transactions({
                               </div>
                             )}
                           </div>
-                    {onDeleteTransaction && (
-                      <button
-                        onClick={() => onDeleteTransaction(tx.id)}
-                        className="btn-icon"
-                        style={{
-                          padding: '0.4rem',
-                          borderRadius: '6px',
-                          background: 'rgba(239, 68, 68, 0.08)',
-                          border: '1px solid rgba(239, 68, 68, 0.2)',
-                          color: '#f87171',
-                          cursor: 'pointer',
-                        }}
-                        title="Delete record"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    )}
+                    
                   </div>
               );
             })
           )}
-        </div>
+        </div>)}
+        {/* List Content */}
+        
 
         {/* Footer with Pagination */}
         {processedTransactions.length > 0 && (

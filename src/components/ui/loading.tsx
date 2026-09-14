@@ -1,4 +1,4 @@
-
+import '../../App.css';
 
 export default function Loading(){
     return(
@@ -29,4 +29,33 @@ export default function Loading(){
       `}</style>
     </div>
     )
+}
+
+export  function LoadingTransaction({hight}:{hight:number}){
+    return(
+      <div className="space-y-3">
+          {[1, 2, 3, 4, 5].map((item) => (
+              <div key={item} className="skeleton-row" />
+          ))}
+
+          <style>{`
+              .skeleton-row {
+                  width: 100%;
+                  height: ${hight}px;
+                  background: #1f1f1f;
+                  animation: skeleton-pulse 1.5s ease-in-out infinite;
+              }
+
+              @keyframes skeleton-pulse {
+                  0%, 100% {
+                      opacity: 0.45;
+                  }
+
+                  50% {
+                      opacity: 1;
+                  }
+              }
+          `}</style>
+      </div>
+   )
 }
