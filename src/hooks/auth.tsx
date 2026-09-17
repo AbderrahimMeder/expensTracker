@@ -4,6 +4,7 @@ import { redirect, useNavigate } from "react-router-dom";
 
 interface AuthContextType {
   user: User | null;
+  loading:boolean;
   login: (userData: User) => void;
   logout: () => void;
 }
@@ -12,12 +13,16 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
+      setLoading(false);
       redirect("/login")
       return;
     }
+    setLoading(false);
 
     const fetchUser = async () => {
       try {
@@ -37,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json();
         setUser(data.user);
       } catch (error) {
+        redirect('/error')
         console.error("Failed to fetch user:", error);
         setUser(null);
       }
@@ -55,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user,loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

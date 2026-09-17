@@ -1,9 +1,55 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Home, ArrowLeft, Wallet } from 'lucide-react';
 
-export default function NotFound() {
+export default function NotFound({stateProps}: {stateProps?: number}) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const status = stateProps || location?.state?.code || 500
+  const errors: Record<number, {
+    title: string;
+    message: string;
+    button: string;
+    action: () => void;
+  }> = {
+    401: {
+      title: "Session Expired",
+      message: "Your session has expired. Please log in again.",
+      button: "Go to Login",
+      action:()=>{
+        navigate('/login')
+      }
+    },
+
+    403: {
+      title: "Access Denied",
+      message: "You do not have permission to access this page.",
+      button: "Go Back",
+      action:()=>{
+        navigate(-1)
+      }
+    },
+
+    404: {
+      title: "Page Not Found",
+      message: "The page you are looking for does not exist.",
+      button: "Go Home",
+      action:()=>{
+        navigate('/')
+      }
+    },
+
+    500: {
+      title: "Server Error",
+      message: "Something went wrong on our server.",
+      button: "Try Again",
+      action:()=>{
+        window.location.reload()
+      }
+    },
+  };
+
+  const error = errors[status] || errors[500];
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -47,7 +93,7 @@ export default function NotFound() {
             <Wallet size={20} strokeWidth={2.5} />
           </div>
           <span style={{ fontSize: '1.25rem', fontWeight: '800', color: '#ffffff' }}>
-            Expense<span style={{ color: '#10b981' }}>Tracker</span>
+           Fin<span style={{ color: '#10b981' }}>ore</span> 
           </span>
         </Link>
 
@@ -61,7 +107,7 @@ export default function NotFound() {
           marginBottom: '1rem',
           textShadow: '0 0 30px rgba(16, 185, 129, 0.25)',
         }}>
-          404
+          {status}
         </div>
 
         {/* Title & Description */}
@@ -72,7 +118,7 @@ export default function NotFound() {
           letterSpacing: '-0.02em',
           marginBottom: '0.65rem',
         }}>
-          Page Not Found
+          {error.title}
         </h2>
 
         <p style={{
@@ -82,7 +128,7 @@ export default function NotFound() {
           maxWidth: '380px',
           margin: '0 auto 2rem auto',
         }}>
-          The page you are looking for doesn't exist, has been removed, or is temporarily unavailable.
+          {error.message}
         </p>
 
         {/* Actions */}
@@ -94,21 +140,21 @@ export default function NotFound() {
           flexWrap: 'wrap',
         }}>
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => error.action()}
             className="btn btn-secondary"
             style={{ padding: '0.65rem 1.25rem' }}
           >
             <ArrowLeft size={16} />
-            <span>Go Back</span>
+            <span>{error.button}</span>
           </button>
 
           <Link
-            to="/"
+            to="/dashboard"
             className="btn btn-primary"
             style={{ padding: '0.65rem 1.25rem', textDecoration: 'none' }}
           >
             <Home size={16} />
-            <span>Back to Home</span>
+            <span>Back to dashboard</span>
           </Link>
         </div>
       </div>

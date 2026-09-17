@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, ArrowLeft, ArrowRight, Eye, EyeOff, Wallet } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/hooks/auth';
 
 interface RegisterProps {
   onSwitchToLogin?: () => void;
@@ -113,7 +113,7 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
       }}>
         {/* Top Bar: Back Link & Logo */}
         <div style={{
-          position: 'relative', 
+          position: 'relative',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -124,9 +124,9 @@ export default function Register({ onSwitchToLogin, onRegisterSuccess }: Registe
             style={{
               position: 'absolute',
               top: '50%',
-              transform: 'translateY(-50%)', 
+              transform: 'translateY(-50%)',
               left: '-20px',
-              display: 'flex', 
+              display: 'flex',
               alignItems: 'center',
               gap: '0.4rem',
               color: 'var(--text-secondary)',

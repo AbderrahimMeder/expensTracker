@@ -4,7 +4,7 @@ import { RouterProvider } from 'react-router-dom';
 import router from '@/config/router';
 import './index.css';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider } from "@/context/authContext";
+import { AuthProvider } from "@/hooks/auth";
 
 const rootElement = document.getElementById('root');
 if (rootElement) {
