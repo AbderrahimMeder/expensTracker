@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Wallet, Menu, X, ArrowRight } from 'lucide-react';
 import { DashboardItems } from '@/config/dashboard-link';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/hooks/auth';
 import { User } from '@/types';
 
 export default function Navbar() {
-  const user =useAuth()?.user as User|null
+  const user = useAuth()?.user as User | null
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [logged, setLogged] = useState(true);
@@ -32,7 +32,7 @@ export default function Navbar() {
     };
     fetchUser();
   }, []);
-  
+
   return (
     <nav style={{
       position: 'sticky',
@@ -146,7 +146,7 @@ export default function Navbar() {
           </div>
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            {loading ? (
+            {!user || loading ? (
               <div
                 style={{
                   width: "36px",
@@ -159,7 +159,7 @@ export default function Navbar() {
             ) : (
               <div style={{ position: "relative" }}>
                 <img
-                  src={user?.avatar  || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100"}
+                  src={user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100"}
                   alt={user?.name || "User"}
                   onClick={() => setProfileToggle((prev) => !prev)}
                   style={{
@@ -173,7 +173,7 @@ export default function Navbar() {
                   }}
                 />
 
-                {profileToggle && (
+                {profileToggle && user && (
                   <div
                     style={{
                       position: "absolute",

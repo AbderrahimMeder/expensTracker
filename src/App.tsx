@@ -33,7 +33,7 @@ function LoadingFallback() {
 
 function App() {
   return (
-    <Suspense fallback={<LoadingFallback />}>
+    <Suspense>
       <Outlet />
     </Suspense>
   );

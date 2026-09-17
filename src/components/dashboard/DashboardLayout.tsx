@@ -1,4 +1,4 @@
-import React, { useState, ReactNode, useEffect } from 'react';
+import  { useState, ReactNode, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Wallet,
@@ -14,7 +14,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/hooks/auth';
 import { User } from '@/types';
 interface DashboardLayoutProps {
   children?: ReactNode;
@@ -28,12 +28,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [collapsed] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  useEffect(()=>{
+  useEffect(() => {
     const token = localStorage.getItem('token');
-    if(!token){
+    if (!token) {
       navigate('/login');
     }
-  },[])
+  }, [])
   const handleLogout = () => {
     logout();
     toast.success('Successfully signed out');
@@ -188,7 +188,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     <Icon size={19} color={isActive ? 'var(--accent-primary)' : 'currentColor'} />
                     {!collapsed && <span>{link.label}</span>}
                   </div>
-                  {!collapsed && link.badge && (
+                  {!collapsed && link.badge && link.badge !== '0' && (
                     <span style={{
                       fontSize: '0.7rem',
                       background: '#1c1c1c',
@@ -382,7 +382,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Dynamic Page Content */}
         <main style={{
           flex: 1,
-          padding: '1.75rem',
+          padding: '0.75rem',
           maxWidth: '1440px',
           margin: '0 auto',
           width: '100%',

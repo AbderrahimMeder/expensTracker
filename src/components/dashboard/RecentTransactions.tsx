@@ -25,7 +25,7 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import { getCategoryDetails, formatCurrency } from '@/utils/dashboardUtils';
 import { Transaction } from '@/types';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/hooks/auth';
 const ICON_MAP: Record<string, LucideIcon> = {
   Utensils,
   Home,
@@ -56,7 +56,7 @@ export default function RecentTransactions({
   rate,
 }: RecentTransactionsProps) {
   const navigate = useNavigate();
-  const {user} = useAuth();
+  const { user } = useAuth();
   const [filterType, setFilterType] = useState<string>('ALL');
 
   const filtered = transactions.filter((tx) => {
@@ -64,7 +64,7 @@ export default function RecentTransactions({
     return matchesType;
   });
 
-  const displayedTransactions = filtered.slice(0,4);
+  const displayedTransactions = filtered.slice(0, 4);
 
   return (
     <div className="glass-card" style={{
@@ -135,7 +135,7 @@ export default function RecentTransactions({
               gap: '0.3rem',
             }}
           >
-            <Link to="/transactions" style={{textDecoration: 'none', color: 'inherit', padding: 0}} >View All</Link>
+            <Link to="/transactions" style={{ textDecoration: 'none', color: 'inherit', padding: 0 }} >View All</Link>
             <ExternalLink size={13} />
           </button>
         </div>
@@ -168,7 +168,7 @@ export default function RecentTransactions({
           </div>
         ) : (
           displayedTransactions.map((tx) => {
-            const cat = getCategoryDetails(tx.category);
+            const cat = getCategoryDetails(tx.categories.name);
             const isIncome = tx.type === 'INCOME';
 
             return (
@@ -228,7 +228,7 @@ export default function RecentTransactions({
                       )}
                       <span>•</span>
                       <span style={{ color: 'var(--text-secondary)' }}>{cat.name}</span>
-                      
+
                     </div>
                   </div>
                 </div>
@@ -244,7 +244,7 @@ export default function RecentTransactions({
                       alignItems: 'center',
                       gap: '2px',
                     }}>
-                      {isIncome ? '+' : '-'} {(tx.amount*rate).toFixed(2)} {user.currency} 
+                      {isIncome ? '+' : '-'} {(tx.amount * rate).toFixed(2)} {user.currency}
                     </div>
                     <div style={{
                       display: 'inline-flex',

@@ -5,27 +5,27 @@ import { Transaction, Currency } from '@/types';
 import { Plus, ArrowUpRight, ArrowDownLeft, Wallet, Receipt, RefreshCw } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { getExchangeRate } from '@/utils/exchange';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/hooks/auth';
 import { LoadingTransaction } from '@/components/ui/loading';
 import toast from 'react-hot-toast';
 
 export default function TransactionsPage() {
   const navigate = useNavigate();
   const APP_URL = 'http://localhost:8000';
-  const { user,loading } = useAuth();
+  const { user, loading } = useAuth();
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [rate, setRate] = useState<number>(1);
-  const [loadingPage,setLoadingPage] = useState<boolean>(false);
+  const [loadingPage, setLoadingPage] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [fetchagain,setFetchagain] = useState<boolean>(false);
+  const [fetchagain, setFetchagain] = useState<boolean>(false);
   const time = useRef(0);
   const interval = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeElement = useRef<HTMLSpanElement>(null);
   const buttonElement = useRef<HTMLButtonElement>(null);
   const fetchTransactions = async (isManualRefresh = false) => {
     console.log('fetch');
-    time.current=0
+    time.current = 0
     setFetchagain(true)
     const token = localStorage.getItem('token');
     if (!token) {
@@ -55,7 +55,7 @@ export default function TransactionsPage() {
         setTransactions(data.transactions);
       }
     } catch (error) {
-      navigate('/error',{state:{code:500}})
+      navigate('/error', { state: { code: 500 } })
       if (isManualRefresh) {
         toast.error('Could not refresh transactions');
       }
@@ -67,13 +67,13 @@ export default function TransactionsPage() {
   };
 
   useEffect(() => {
-    if(!loading){
+    if (!loading) {
       setLoadingPage(true);
     }
-    if(user&&!loading){
-      if(!user) navigate('/login')
+    if (user && !loading) {
+      if (!user) navigate('/login')
       else fetchTransactions();
-      
+
     }
   }, [user, loading, navigate]);
 
@@ -94,45 +94,45 @@ export default function TransactionsPage() {
     };
   }, [user]);
 
-const startTimer = () => {
-  if (interval.current) return;
+  const startTimer = () => {
+    if (interval.current) return;
 
-  time.current = 1;
-
-  if (timeElement.current) {
-    timeElement.current.textContent = `${time.current}s`;
-  }
-
-  if (buttonElement.current) {
-    buttonElement.current.disabled = true;
-    buttonElement.current.style.cursor = 'not-allowed';
-    buttonElement.current.style.opacity = '0.5';
-  }
-
-  interval.current = setInterval(() => {
-    time.current += 1;
+    time.current = 1;
 
     if (timeElement.current) {
       timeElement.current.textContent = `${time.current}s`;
     }
 
-    if (time.current >= 30) {
-      clearInterval(interval.current!);
-      interval.current = null;
-      time.current = 0;
+    if (buttonElement.current) {
+      buttonElement.current.disabled = true;
+      buttonElement.current.style.cursor = 'not-allowed';
+      buttonElement.current.style.opacity = '0.5';
+    }
+
+    interval.current = setInterval(() => {
+      time.current += 1;
 
       if (timeElement.current) {
-        timeElement.current.textContent = 'Refresh';
+        timeElement.current.textContent = `${time.current}s`;
       }
 
-      if (buttonElement.current) {
-        buttonElement.current.disabled = false;
-        buttonElement.current.style.cursor = 'pointer';
-        buttonElement.current.style.opacity = '1';
+      if (time.current >= 30) {
+        clearInterval(interval.current!);
+        interval.current = null;
+        time.current = 0;
+
+        if (timeElement.current) {
+          timeElement.current.textContent = 'Refresh';
+        }
+
+        if (buttonElement.current) {
+          buttonElement.current.disabled = false;
+          buttonElement.current.style.cursor = 'pointer';
+          buttonElement.current.style.opacity = '1';
+        }
       }
-    }
-  }, 1000);
-};
+    }, 1000);
+  };
   // Financial Stats calculation
   const stats = useMemo(() => {
     const totalIncome = transactions
@@ -157,15 +157,19 @@ const startTimer = () => {
 
   const userCurrency = user?.currency || 'USD';
 
-  if (loadingPage) return <LoadingTransaction hight={150} />;
+  
 
   return (
     <DashboardLayout>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', paddingBottom: '3rem' }}>
-        {/* Page Header */}
-        <div
-          style={{
-            display: 'flex',
+      {loadingPage ? (
+        <LoadingTransaction hight={130} />
+      ) : (
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', paddingBottom: '3rem' }}>
+          {/* Page Header */}
+          <div
+            style={{
+              display: 'flex',
             flexWrap: 'wrap',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -215,7 +219,7 @@ const startTimer = () => {
           {/* Action Buttons */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <button
-              onClick={() => {fetchTransactions(true);startTimer()}}
+              onClick={() => { fetchTransactions(true); startTimer() }}
               ref={buttonElement}
               className="btn btn-secondary"
               style={{ padding: '0.65rem 0.85rem', gap: '0.4rem' }}
@@ -256,6 +260,7 @@ const startTimer = () => {
           fetchagain={fetchagain}
         />
       </div>
+    )}
     </DashboardLayout>
   );
 }

@@ -1,8 +1,8 @@
-import React, { useState, useEffect,useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { RefreshCw } from 'lucide-react';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/hooks/auth';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import OverviewHeader from '@/components/dashboard/OverviewHeader';
 import StatCards from '@/components/dashboard/StatCards';
@@ -10,13 +10,14 @@ import RecentTransactions from '@/components/dashboard/RecentTransactions';
 import BudgetProgress from '@/components/dashboard/BudgetProgress';
 import BudgetModal from '@/components/dashboard/BudgetModal';;
 import { Transaction, Budget, Currency } from '@/types';
-import {getExchangeRate} from '@/utils/exchange';
-import Loading from '@/components/ui/loading';
+import { getExchangeRate } from '@/utils/exchange';
+import {LoadingTransaction} from '@/components/ui/loading';
+
 export default function Dashboard() {
   const APP_URL = 'http://localhost:8000'
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [loading,setLoading]=useState(false);
+  const [loading, setLoading] = useState(false);
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (!token) {
@@ -24,96 +25,96 @@ export default function Dashboard() {
     }
     const fetchdata = async () => {
       setLoading(true)
-      try{
-      const response = await fetch(`${APP_URL}/api/transactions`, {
-        method: "GET",
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      try {
+        const response = await fetch(`${APP_URL}/api/transactions`, {
+          method: "GET",
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        });
 
-      const data = await response.json();
-      if(data.status==401){
-        toast.error('Session expired. Please log in again.');
-        navigate('/login')
-        localStorage.removeItem('token')
+        const data = await response.json();
+        if (data.status == 401) {
+          toast.error('Session expired. Please log in again.');
+          navigate('/login')
+          localStorage.removeItem('token')
+        }
+        if (data.status == 200) {
+          setTransactions(data.transactions);
+        }
+        setLoading(false);
+      } catch (error) {
+        navigate('/error', { state: { code: 500 } })
+        setLoading(false);
+      } finally {
+        setLoading(false);
       }
-      if (data.status == 200) {
-        setTransactions(data.transactions);
-      }
-      setLoading(false);
-    }catch(error){
-      navigate('/error',{state:{code:500}})
-      setLoading(false);
-    }finally{
-      setLoading(false);
     }
-  }
     fetchdata();
-    
+
   }, [user])
 
   // Local storage state with initial fallbacks
   const [transactions, setTransactions] = useState<Transaction[]>([])
 
   const [budget, setBudget] = useState<Budget>();
-  const [rate,setrate]=useState(1);
-  useEffect( () => {
-      const fetchrate = async()=>{
-        const rate =await getExchangeRate(user?.currency || "USD");
-        setrate(rate)
-      }
-      fetchrate();
-  },[user])
-const stats = useMemo( () => {
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth()+1).padStart(2, "0");
-      const previousMonth = new Date(now.getFullYear(),now.getMonth()-1,1);
-      const previousMonthStr =
-      `${previousMonth.getFullYear()}-${String(previousMonth.getMonth()+1).padStart(2, "0")}`;
+  const [rate, setrate] = useState(1);
+  useEffect(() => {
+    const fetchrate = async () => {
+      const rate = await getExchangeRate(user?.currency || "USD");
+      setrate(rate)
+    }
+    fetchrate();
+  }, [user])
+  const stats = useMemo(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const previousMonthStr =
+      `${previousMonth.getFullYear()}-${String(previousMonth.getMonth() + 1).padStart(2, "0")}`;
 
 
     const totalIncome = transactions
-        .filter(t => t.type === "INCOME")
-        .reduce((acc, t) => acc + Number(t.amount), 0);
+      .filter(t => t.type === "INCOME")
+      .reduce((acc, t) => acc + Number(t.amount), 0);
     const totalExpenses = transactions
-        .filter(t => t.type === "EXPENSE")
-        .reduce((acc, t) => acc + Number(t.amount), 0);
-      //this month 
+      .filter(t => t.type === "EXPENSE")
+      .reduce((acc, t) => acc + Number(t.amount), 0);
+    //this month 
     const totalIncomeThisMouth = transactions
-        .filter(t => t.type === "INCOME" && t.date.startsWith(`${year}-${month}`))
-        .reduce((acc, t) => acc + Number(t.amount), 0);
+      .filter(t => t.type === "INCOME" && t.date.startsWith(`${year}-${month}`))
+      .reduce((acc, t) => acc + Number(t.amount), 0);
     const totalExpensesThisMouth = transactions.filter(
-      t =>( t.type === "EXPENSE") && t.date.startsWith(`${year}-${month}`)
-      ).reduce((acc, t) => acc + Number(t.amount), 0);
-      //last month 
+      t => (t.type === "EXPENSE") && t.date.startsWith(`${year}-${month}`)
+    ).reduce((acc, t) => acc + Number(t.amount), 0);
+    //last month 
     const totalIncomelastMonth = transactions.filter(
-      t =>( t.type === "INCOME") && t.date.startsWith(`${previousMonthStr}`)
-      ).reduce((acc, t) => acc + Number(t.amount), 0);
+      t => (t.type === "INCOME") && t.date.startsWith(`${previousMonthStr}`)
+    ).reduce((acc, t) => acc + Number(t.amount), 0);
     const totalExpenseslastMonth = transactions.filter(
-      t =>( t.type === "EXPENSE") && t.date.startsWith(`${previousMonthStr}`)
-      ).reduce((acc, t) => acc + Number(t.amount), 0);
-    const savings = totalIncomeThisMouth-totalExpensesThisMouth
-    const savingsLastMounth = totalIncomelastMonth -totalExpenseslastMonth
+      t => (t.type === "EXPENSE") && t.date.startsWith(`${previousMonthStr}`)
+    ).reduce((acc, t) => acc + Number(t.amount), 0);
+    const savings = totalIncomeThisMouth - totalExpensesThisMouth
+    const savingsLastMounth = totalIncomelastMonth - totalExpenseslastMonth
     const savingsRate = Number(savingsLastMounth) > 0
-        ? `${(((Number(savings)-Number(savingsLastMounth))/Number(savingsLastMounth))* 100).toFixed(1)}`
-        : "0";
-    const Incomerate = Number(totalIncomeThisMouth)/Number(totalIncome)*100
-    const totalbalancerate = Number(totalIncomeThisMouth-totalExpensesThisMouth)/Number(totalIncome-totalExpenses)*100
-    localStorage.setItem("transactionsCount",transactions.length.toString());
+      ? `${(((Number(savings) - Number(savingsLastMounth)) / Number(savingsLastMounth)) * 100).toFixed(1)}`
+      : "0";
+    const Incomerate = Number(totalIncomeThisMouth) / Number(totalIncome) * 100
+    const totalbalancerate = Number(totalIncomeThisMouth - totalExpensesThisMouth) / Number(totalIncome - totalExpenses) * 100
+    localStorage.setItem("transactionsCount", transactions.length.toString());
     return {
-        totalBalance: totalIncome*rate-totalExpenses*rate,
-        totalIncome:totalIncomeThisMouth*rate,
-        totalExpenses:totalExpensesThisMouth*rate,
-        savings:savings*rate,
-        savingsRate,
-        transactionCount: transactions.length,
-        Incomerate,
-        totalbalancerate
+      totalBalance: totalIncome * rate - totalExpenses * rate,
+      totalIncome: totalIncomeThisMouth * rate,
+      totalExpenses: totalExpensesThisMouth * rate,
+      savings: savings * rate,
+      savingsRate,
+      transactionCount: transactions.length,
+      Incomerate,
+      totalbalancerate
     };
-}, [transactions]);
+  }, [transactions]);
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
@@ -130,11 +131,16 @@ const stats = useMemo( () => {
   const categorySpending = [];
 
   const userName = user?.name || '';
-  if(loading) return <Loading/>
+
   return (
     <DashboardLayout>
       {/* 1. Overview Header with live controls */}
-      <OverviewHeader
+      {loading ? 
+      <LoadingTransaction hight={200} /> 
+      :
+       (
+       <>
+       <OverviewHeader
         userName={userName}
         onRefresh={handleRefresh}
         isRefreshing={isRefreshing}
@@ -166,7 +172,7 @@ const stats = useMemo( () => {
             transactions={transactions}
             currency={user?.currency}
             rate={rate}
-            />
+          />
         </div>
 
         {/* Right Column (Budgets, Breakdown, & Quick Actions) - 5 of 12 columns */}
@@ -193,11 +199,11 @@ const stats = useMemo( () => {
       </div>
       {/* 9. Monthly Budget Configuration Modal */}
       <BudgetModal
-         isOpen={isBudgetModalOpen}
+        isOpen={isBudgetModalOpen}
         onClose={() => setIsBudgetModalOpen(false)}
         currentBudget={budget}
         currency={user?.currency}
-         onSave={() => { }}
+        onSave={() => { }}
       />
 
       {/* Page Responsive Styles */}
@@ -209,6 +215,8 @@ const stats = useMemo( () => {
           }
         }
       `}</style>
+      </>
+       )}
     </DashboardLayout>
   );
 }

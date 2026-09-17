@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import {
-  ArrowUpDown,
   Search,
   Plus,
   Utensils,
@@ -26,15 +25,15 @@ import {
   Building2,
   Wallet,
   DollarSign,
-  Tag,
   Trash2,
   Receipt,
   X,
-  SlidersHorizontal
+  SlidersHorizontal,
+  RefreshCw
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Transaction } from '@/types';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/hooks/auth';
 import toast from 'react-hot-toast';
 import Loading, { LoadingTransaction } from '../ui/loading';
 
@@ -58,7 +57,7 @@ interface TransactionsProps {
   transactions?: Transaction[];
   currency?: string;
   rate?: number;
-  fetchagain:boolean;
+  fetchagain: boolean;
 }
 
 export default function Transactions({
@@ -70,6 +69,7 @@ export default function Transactions({
   const navigate = useNavigate();
   const { user } = useAuth();
   const [actionId, setActionId] = useState('');
+  const [fetchAgainLocaly, setFetchAgain] = useState(fetchagain);
   // Filters State
   const [filterType, setFilterType] = useState<string>('ALL');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
@@ -80,33 +80,40 @@ export default function Transactions({
   // Pagination State
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+
+  const [loadingTrash, setLoadingTrash] = useState<boolean>(false);
   // list of payment methods
   const paymentMethods = [
-      'ALL',
-      ...new Set(
-        transactions
-          .map((t) => t.payment_methods?.name??''.replace(/_/g, ' '))
-          .filter(Boolean)
-      ),
-    ];
+    'ALL',
+    ...new Set(
+      transactions
+        .map((t) => t.payment_methods?.name ?? ''.replace(/_/g, ' '))
+        .filter(Boolean)
+    ),
+  ];
 
   //handle delete 
   const handleDeleteTrasaction = async (id: string) => {
     try {
-      const res =await fetch(`${APP_URL}/api/transactions/${id}`,{
-        method:'DELETE',
-        headers:{
-          'Content-Type':'application/json',
-          'Authorization':`Bearer ${localStorage.getItem('token')}`
+      setLoadingTrash(true)
+      const res = await fetch(`${APP_URL}/api/transactions/${id}/delete`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
+      window.location.reload()
       const data = await res.json();
-      if(data.status == 200){
+      if (data.status == 200) {
         toast.success('Transaction deleted successfully!');
+
       }
     } catch (error) {
-      console.error('Error deleting transaction:', error);
       toast.error('Failed to delete transaction');
+      
+    } finally {
+      setLoadingTrash(false)
     }
   };
   //handleEdit 
@@ -114,7 +121,7 @@ export default function Transactions({
     navigate(`/transactions/${id}/edit`);
   };
   // Category Helper
-  
+
 
   // Payment Method Helper
   const getPaymentIcon = (method?: string) => {
@@ -355,7 +362,7 @@ export default function Transactions({
           </div>
 
           {/* Quick Search */}
-          
+
 
           {/* Export Action */}
           <button
@@ -433,7 +440,7 @@ export default function Transactions({
               cursor: 'pointer',
             }}
           >
-            {paymentMethods.map((t)=>{
+            {paymentMethods.map((t) => {
               return (<option key={t} value={t}>
                 {t}
               </option>)
@@ -464,7 +471,7 @@ export default function Transactions({
             <option value="30d">30d</option>
             <option value="1y">1y</option>
           </select>
-            <div style={{ position: 'relative', flex: '1 1 260px', maxWidth: '400px' }}>
+          <div style={{ position: 'relative', flex: '1 1 260px', maxWidth: '400px' }}>
             <Search
               size={15}
               color="var(--text-muted)"
@@ -598,346 +605,348 @@ export default function Transactions({
           <div style={{ textAlign: 'right' }}>Amount ({userCurrency})</div>
           <div style={{ textAlign: 'center' }}>Actions</div>
         </div>
-        {fetchagain?
-        (<LoadingTransaction hight={50} />)
-        :(<div style={{ display: 'flex', flexDirection: 'column' }}>
-          {paginatedTransactions.length === 0 ? (
-            <div
-              style={{
-                textAlign: 'center',
-                padding: '4rem 1.5rem',
-                background: '#0d0d0d',
-              }}
-            >
+        {fetchagain||fetchAgainLocaly ?
+          (<LoadingTransaction hight={50} />)
+          : (<div style={{ display: 'flex', flexDirection: 'column' }}>
+            {paginatedTransactions.length === 0 ? (
               <div
                 style={{
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: '50%',
-                  background: '#161616',
-                  color: 'var(--text-muted)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 1rem',
+                  textAlign: 'center',
+                  padding: '4rem 1.5rem',
+                  background: '#0d0d0d',
                 }}
               >
-                <Receipt size={24} />
-              </div>
-              <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#ffffff', margin: '0 0 0.4rem' }}>
-                No Transactions Found
-              </h3>
-              <p
-                style={{
-                  color: 'var(--text-secondary)',
-                  fontSize: '0.85rem',
-                  maxWidth: '380px',
-                  margin: '0 auto 1.5rem',
-                }}
-              >
-                {hasActiveFilters
-                  ? 'No transaction matches your active filters or search query.'
-                  : 'Start recording your expenses and income to see them listed in your ledger.'}
-              </p>
-
-              {hasActiveFilters ? (
-                <button
-                  onClick={handleResetFilters}
-                  className="btn btn-secondary"
-                  style={{ fontSize: '0.825rem', padding: '0.5rem 1.25rem' }}
-                >
-                  Clear All Filters
-                </button>
-              ) : (
-                <Link
-                  to="/transactions/new"
-                  className="btn btn-primary"
-                  style={{ fontSize: '0.825rem', padding: '0.5rem 1.25rem', gap: '0.4rem' }}
-                >
-                  <Plus size={15} />
-                  <span>Create First Transaction</span>
-                </Link>
-              )}
-            </div>
-          ) : (
-            paginatedTransactions.map((tx, idx) => {
-              const isIncome = (tx.type || '').toUpperCase() === 'INCOME';
-              const MethodIcon = getPaymentIcon(tx.payment_methods?.name);
-              const converted = (Number(tx.amount || 0) * rate).toFixed(2);
-
-              return (
                 <div
-                  key={tx.id || idx}
-                  onClick={() => navigate(`/transactions/${tx.id}`)}
                   style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'minmax(200px, 2fr) 1.2fr 1fr 1fr 1.2fr 100px',
-                    padding: '0.95rem 1.25rem',
-                    borderBottom: '1px solid var(--border-subtle)',
-                    background: '#0e0e0e',
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: '50%',
+                    background: '#161616',
+                    color: 'var(--text-muted)',
+                    display: 'flex',
                     alignItems: 'center',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                  }}
-                  className="tx-table-row"
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#151515';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = '#0e0e0e';
+                    justifyContent: 'center',
+                    margin: '0 auto 1rem',
                   }}
                 >
-                  {/* Column 1: Icon, Title & Description */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                    <div
-                      style={{
-                        width: '38px',
-                        height: '38px',
-                        borderRadius: '10px',
-                        background: 'gray',
-                        color: 'black',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                      }}
-                    >
-                      
-                    </div>
+                  <Receipt size={24} />
+                </div>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#ffffff', margin: '0 0 0.4rem' }}>
+                  No Transactions Found
+                </h3>
+                <p
+                  style={{
+                    color: 'var(--text-secondary)',
+                    fontSize: '0.85rem',
+                    maxWidth: '380px',
+                    margin: '0 auto 1.5rem',
+                  }}
+                >
+                  {hasActiveFilters
+                    ? 'No transaction matches your active filters or search query.'
+                    : 'Start recording your expenses and income to see them listed in your ledger.'}
+                </p>
 
-                    <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                {hasActiveFilters ? (
+                  <button
+                    onClick={handleResetFilters}
+                    className="btn btn-secondary"
+                    style={{ fontSize: '0.825rem', padding: '0.5rem 1.25rem' }}
+                  >
+                    Clear All Filters
+                  </button>
+                ) : (
+                  <Link
+                    to="/transactions/new"
+                    className="btn btn-primary"
+                    style={{ fontSize: '0.825rem', padding: '0.5rem 1.25rem', gap: '0.4rem' }}
+                  >
+                    <Plus size={15} />
+                    <span>Create First Transaction</span>
+                  </Link>
+                )}
+              </div>
+            ) : (
+              paginatedTransactions.map((tx, idx) => {
+                const isIncome = (tx.type || '').toUpperCase() === 'INCOME';
+                const MethodIcon = getPaymentIcon(tx.payment_methods?.name);
+                const converted = (Number(tx.amount || 0) * rate).toFixed(2);
+
+                return (
+                  <div
+                    key={tx.id || idx}
+                    onClick={() => navigate(`/transactions/${tx.id}`)}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'minmax(200px, 2fr) 1.2fr 1fr 1fr 1.2fr 100px',
+                      padding: '0.95rem 1.25rem',
+                      borderBottom: '1px solid var(--border-subtle)',
+                      background: '#0e0e0e',
+                      alignItems: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                    className="tx-table-row"
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#151515';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = '#0e0e0e';
+                    }}
+                  >
+                    {/* Column 1: Icon, Title & Description */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                       <div
                         style={{
-                          fontSize: '0.9rem',
-                          fontWeight: '700',
-                          color: '#ffffff',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
+                          width: '38px',
+                          height: '38px',
+                          borderRadius: '10px',
+                          background: 'gray',
+                          color: 'black',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '0.5rem',
+                          justifyContent: 'center',
+                          flexShrink: 0,
                         }}
                       >
-                        <span>{tx.title || tx.description || 'Transaction'}</span>
+
                       </div>
-                      {tx.description && tx.description !== tx.title && (
+
+                      <div style={{ minWidth: 0, overflow: 'hidden' }}>
                         <div
                           style={{
-                            fontSize: '0.75rem',
-                            color: 'var(--text-muted)',
+                            fontSize: '0.9rem',
+                            fontWeight: '700',
+                            color: '#ffffff',
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
-                            marginTop: '2px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
                           }}
                         >
-                          {tx.description}
+                          <span>{tx.title || tx.description || 'Transaction'}</span>
                         </div>
-                      )}
+                        {tx.description && tx.description !== tx.title && (
+                          <div
+                            style={{
+                              fontSize: '0.75rem',
+                              color: 'var(--text-muted)',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              marginTop: '2px',
+                            }}
+                          >
+                            {tx.description}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Column 2: Category Pill */}
-                  <div>
-                    <span
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.35rem',
-                        padding: '0.2rem 0.6rem',
-                        borderRadius: '6px',
-                        background: tx.type === 'EXPENSE' ? 'rgba(223, 14, 14, 0.3)' : 'rgba(38, 203, 93, 0.3)',
-                        color: tx.type === 'EXPENSE' ? 'rgba(255, 255, 255, 1)' : 'rgba(255, 255, 255, 1)',
-                        fontSize: '0.75rem',
-                        fontWeight: '600',
-                      }}
-                    >
+                    {/* Column 2: Category Pill */}
+                    <div>
                       <span
                         style={{
-                          width: '6px',
-                          height: '6px',
-                          borderRadius: '50%',
-                          background:tx.type === 'EXPENSE' ? 'red' : 'green' ,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          padding: '0.2rem 0.6rem',
+                          borderRadius: '6px',
+                          background: tx.type === 'EXPENSE' ? 'rgba(223, 14, 14, 0.3)' : 'rgba(38, 203, 93, 0.3)',
+                          color: tx.type === 'EXPENSE' ? 'rgba(255, 255, 255, 1)' : 'rgba(255, 255, 255, 1)',
+                          fontSize: '0.75rem',
+                          fontWeight: '600',
                         }}
-                      />
-                      <span> {tx?.categories?.name}</span>
-                    </span>
-                  </div>
+                      >
+                        <span
+                          style={{
+                            width: '6px',
+                            height: '6px',
+                            borderRadius: '50%',
+                            background: tx.type === 'EXPENSE' ? 'red' : 'green',
+                          }}
+                        />
+                        <span> {tx?.categories?.name}</span>
+                      </span>
+                    </div>
 
-                  {/* Column 3: Date & Time */}
-                  <div style={{ fontSize: '0.775rem', color: 'var(--text-secondary)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <Calendar size={12} color="var(--text-muted)" />
-                      <span>{new Date(tx.date).toLocaleDateString('en-US', {
+                    {/* Column 3: Date & Time */}
+                    <div style={{ fontSize: '0.775rem', color: 'var(--text-secondary)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <Calendar size={12} color="var(--text-muted)" />
+                        <span>{new Date(tx.date).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: '2-digit',
                           day: '2-digit',
                         }) || 'N/A'}</span>
+                      </div>
+                      {tx.time && (
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            color: 'var(--text-muted)',
+                            fontSize: '0.7rem',
+                            marginTop: '2px',
+                          }}
+                        >
+                          <Clock size={11} />
+                          <span>{new Date(tx.time).toLocaleTimeString('en-US', {
+                            year: 'numeric',
+                            month: '2-digit',
+                          })}</span>
+                        </div>
+                      )}
                     </div>
-                    {tx.time && (
-                      <div
+
+                    {/* Column 4: Payment Method */}
+                    <div style={{ textAlign: 'right' }}>
+                      <span
                         style={{
-                          display: 'flex',
+                          display: 'inline-flex',
                           alignItems: 'center',
                           gap: '0.35rem',
-                          color: 'var(--text-muted)',
-                          fontSize: '0.7rem',
+                          fontSize: '0.775rem',
+                          color: 'var(--text-secondary)',
+                          background: '#161616',
+                          padding: '0.2rem 0.55rem',
+                          borderRadius: '5px',
+                          border: '1px solid var(--border-subtle)',
+
+                        }}
+                      >
+                        <MethodIcon size={12} color="var(--text-muted)" />
+                        <span>{tx.payment_methods?.name?.toLocaleLowerCase().replace(/_/g, ' ') || '******'}</span>
+                      </span>
+                    </div>
+
+                    {/* Column 5: Amount */}
+                    <div style={{ textAlign: 'right' }}>
+                      <div
+                        style={{
+                          fontSize: '0.95rem',
+                          fontWeight: '800',
+                          color: isIncome ? '#10b981' : '#f87171',
+                          letterSpacing: '-0.01em',
+                        }}
+                      >
+                        {isIncome ? '+' : '-'} {converted} {userCurrency}
+                      </div>
+                      <div
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                          fontSize: '0.675rem',
+                          color: tx.status === 'Pending' ? '#eab308' : '#10b981',
                           marginTop: '2px',
                         }}
                       >
-                        <Clock size={11} />
-                        <span>{new Date(tx.time).toLocaleTimeString('en-US', {
-                          year: 'numeric',
-                          month: '2-digit',
-                        })}</span>
+                        {tx.status === 'Pending' ? <Clock size={10} /> : <CheckCircle2 size={10} />}
+                        <span>{tx.status || 'Completed'}</span>
                       </div>
-                    )}
-                  </div>
+                    </div>
 
-                  {/* Column 4: Payment Method */}
-                  <div style={{ textAlign: 'right' }}>
-                    <span
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.35rem',
-                        fontSize: '0.775rem',
-                        color: 'var(--text-secondary)',
-                        background: '#161616',
-                        padding: '0.2rem 0.55rem',
-                        borderRadius: '5px',
-                        border: '1px solid var(--border-subtle)',
-                        
-                      }}  
-                    >
-                      <MethodIcon size={12} color="var(--text-muted)" />
-                      <span>{tx.payment_methods?.name?.toLocaleLowerCase().replace(/_/g, ' ')|| '******'}</span>
-                    </span>
-                  </div>
-
-                  {/* Column 5: Amount */}
-                  <div style={{ textAlign: 'right' }}>
+                    {/* Column 6: Actions */}
                     <div
                       style={{
-                        fontSize: '0.95rem',
-                        fontWeight: '800',
-                        color: isIncome ? '#10b981' : '#f87171',
-                        letterSpacing: '-0.01em',
-                      }}
-                    >
-                      {isIncome ? '+' : '-'} {converted} {userCurrency}
-                    </div>
-                    <div
-                      style={{
-                        display: 'inline-flex',
+                        position: 'relative',
+                        display: 'flex',
                         alignItems: 'center',
-                        gap: '3px',
-                        fontSize: '0.675rem',
-                        color: tx.status === 'Pending' ? '#eab308' : '#10b981',
-                        marginTop: '2px',
+                        justifyContent: 'center',
+                        gap: '0.4rem',
                       }}
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      {tx.status === 'Pending' ? <Clock size={10} /> : <CheckCircle2 size={10} />}
-                      <span>{tx.status || 'Completed'}</span>
-                    </div>
-                  </div>
+                      <button
+                        onClick={() => {
+                          setActionId(actionId === tx.id ? null : tx.id);
+                        }}
+                        className="btn-icon"
+                        style={{
+                          padding: '0.4rem',
+                          borderRadius: '6px',
+                          background: '#141414',
+                          border: '1px solid var(--border-subtle)',
+                          color: 'var(--text-secondary)',
+                          cursor: 'pointer',
+                        }}
+                        title="Actions"
+                      >
+                        <ChevronRight size={14} />
+                      </button>
 
-                  {/* Column 6: Actions */}
+                      {actionId === tx.id && (
                         <div
+                          style={{
+                            position: 'absolute',
+                            top: 'calc(100% + 6px)',
+                            right: 0,
+                            minWidth: '100px',
+                            background: '#141414',
+                            border: '1px solid var(--border-subtle)',
+                            borderRadius: '8px',
+                            padding: '0.35rem',
+                            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.35)',
+                            zIndex: 1000,
+                          }}
+                        >
+                          <button
+                            onClick={() => {
+                              handleDeleteTrasaction(tx.id)
+                              // View voucher logic
+                            }}
+                            disabled={loadingTrash}
                             style={{
-                              position: 'relative',
+                              width: '100%',
                               display: 'flex',
                               alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '0.4rem',
+                              gap: '0.6rem',
+                              padding: '0.65rem 0.75rem',
+                              background: 'transparent',
+                              border: 'none',
+                              borderRadius: '6px',
+                              color: '#f87171',
+                              cursor:loadingTrash ? 'not-allowed' : 'pointer' ,
+                              textAlign: 'left',
                             }}
-                            onClick={(e) => e.stopPropagation()}
                           >
-                            <button
-                              onClick={() => {
-                                setActionId(actionId === tx.id ? null : tx.id);
-                              }}
-                              className="btn-icon"
-                              style={{
-                                padding: '0.4rem',
-                                borderRadius: '6px',
-                                background: '#141414',
-                                border: '1px solid var(--border-subtle)',
-                                color: 'var(--text-secondary)',
-                                cursor: 'pointer',
-                              }}
-                              title="Actions"
-                            >
-                              <ChevronRight size={14} />
-                            </button>
+                            {loadingTrash ? <RefreshCw size={12} color="#f87171" className="animate-spin" /> : <Trash2 size={12} color="#f87171" />}
+                            delete 
+                          </button>
 
-                            {actionId === tx.id && (
-                              <div
-                                style={{
-                                  position: 'absolute',
-                                  top: 'calc(100% + 6px)',
-                                  right: 0,
-                                  minWidth: '100px',
-                                  background: '#141414',
-                                  border: '1px solid var(--border-subtle)',
-                                  borderRadius: '8px',
-                                  padding: '0.35rem',
-                                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.35)',
-                                  zIndex: 1000,
-                                }}
-                              >
-                                <button
-                                  onClick={() => {
-                                    handleDeleteTrasaction(tx.id)
-                                    // View voucher logic
-                                  }}
-                                  style={{
-                                    width: '100%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.6rem',
-                                    padding: '0.65rem 0.75rem',
-                                    background: 'transparent',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    color: '#f87171',
-                                    cursor: 'pointer',
-                                    textAlign: 'left',
-                                  }}
-                                >
-                                 <Trash2 size={12} color="#f87171" /> delete 
-                                </button>
+                          <button
+                            onClick={() => {
+                              handleEditTrasaction(tx.id);
+                              // Edit logic
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '0.65rem 0.75rem',
+                              background: 'transparent',
+                              border: 'none',
+                              borderRadius: '6px',
+                              color: 'var(--text-primary)',
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                            }}
+                          >
+                            Edit
+                          </button>
+                        </div>
+                      )}
+                    </div>
 
-                                <button
-                                  onClick={() => {
-                                    handleEditTrasaction(tx.id);
-                                    // Edit logic
-                                  }}
-                                  style={{
-                                    width: '100%',
-                                    padding: '0.65rem 0.75rem',
-                                    background: 'transparent',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    color: 'var(--text-primary)',
-                                    cursor: 'pointer',
-                                    textAlign: 'left',
-                                  }}
-                                >
-                                  Edit
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                    
                   </div>
-              );
-            })
-          )}
-        </div>)}
+                );
+              })
+            )}
+          </div>)}
         {/* List Content */}
-        
+
 
         {/* Footer with Pagination */}
         {processedTransactions.length > 0 && (

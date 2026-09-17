@@ -9,27 +9,40 @@ export interface User {
 }
 
 export type TransactionType = 'INCOME' | 'EXPENSE';
-
+export interface payment_methods {
+    id:string;
+    name:string;
+    type:string;
+    is_active:boolean
+}
 export interface Transaction {
   id: string;
-  account_id: string;
+  account_id?: string;
+  user_id?: string;
   type: TransactionType;
   amount: number;
+  currency?: string;
   title?: string;
   description?: string;
   date: string;
   time?: string;
   status?: string;
-  categories?:{
-    name:string;
-    slug:string;
-  };
-  payment_methods?:{
-    id:string;
-    name:string;
-    type:string;
-  }
+  categories?:Category;
+  payment_methods?:payment_methods;
 }
+
+export interface TransactionCreate {
+  type: TransactionType;
+  amount: number;
+  currency?: string;
+  title?: string;
+  description?: string;
+  status?:string;
+  date?:string;
+  category_id?:string;
+  payment_method_id?:string;
+}
+
 
 export interface Category {
   id: string;

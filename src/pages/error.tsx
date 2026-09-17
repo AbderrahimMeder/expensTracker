@@ -4,7 +4,6 @@ import { Home, ArrowLeft, Wallet } from 'lucide-react';
 export default function NotFound({stateProps}: {stateProps?: number}) {
   const navigate = useNavigate();
   const location = useLocation();
-  console.log(location?.state?.code)
   const status = stateProps || location?.state?.code || 500
   const errors: Record<number, {
     title: string;
@@ -94,7 +93,7 @@ export default function NotFound({stateProps}: {stateProps?: number}) {
             <Wallet size={20} strokeWidth={2.5} />
           </div>
           <span style={{ fontSize: '1.25rem', fontWeight: '800', color: '#ffffff' }}>
-            Expense<span style={{ color: '#10b981' }}>Tracker</span>
+           Fin<span style={{ color: '#10b981' }}>ore</span> 
           </span>
         </Link>
 

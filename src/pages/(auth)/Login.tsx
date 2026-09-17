@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, ArrowLeft, ArrowRight, Eye, EyeOff, Wallet } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/hooks/auth';
 
 interface LoginProps {
   onSwitchToRegister?: () => void;
@@ -83,7 +83,7 @@ export default function Login({ onSwitchToForgotPassword, onLoginSuccess }: Logi
         position: 'relative',
       }}>
         <div style={{
-          position: 'relative', 
+          position: 'relative',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -94,9 +94,9 @@ export default function Login({ onSwitchToForgotPassword, onLoginSuccess }: Logi
             style={{
               position: 'absolute',
               top: '50%',
-              transform: 'translateY(-50%)', 
+              transform: 'translateY(-50%)',
               left: '-20px',
-              display: 'flex', 
+              display: 'flex',
               alignItems: 'center',
               gap: '0.4rem',
               color: 'var(--text-secondary)',
@@ -190,17 +190,17 @@ export default function Login({ onSwitchToForgotPassword, onLoginSuccess }: Logi
           <div className="form-group">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <label className="form-label">Password</label>
-                <Link
-                  to="/forgot-password"
-                  style={{
-                    color: '#10b981',
-                    fontSize: '0.75rem',
-                    fontWeight: '600',
-                    textDecoration: 'none',
-                  }}
-                >
-                  Forgot Password?
-                </Link>
+              <Link
+                to="/forgot-password"
+                style={{
+                  color: '#10b981',
+                  fontSize: '0.75rem',
+                  fontWeight: '600',
+                  textDecoration: 'none',
+                }}
+              >
+                Forgot Password?
+              </Link>
             </div>
             <div style={{ position: 'relative' }}>
               <input
@@ -274,17 +274,17 @@ export default function Login({ onSwitchToForgotPassword, onLoginSuccess }: Logi
           <span style={{ color: 'var(--text-muted)', fontSize: '0.825rem' }}>
             Don't have an account?{' '}
           </span>
-            <Link
-              to="/register"
-              style={{
-                color: '#10b981',
-                fontSize: '0.825rem',
-                fontWeight: '700',
-                textDecoration: 'underline',
-              }}
-            >
-              Create Account
-            </Link>
+          <Link
+            to="/register"
+            style={{
+              color: '#10b981',
+              fontSize: '0.825rem',
+              fontWeight: '700',
+              textDecoration: 'underline',
+            }}
+          >
+            Create Account
+          </Link>
         </div>
       </div>
     </div>

@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '@/context/authContext';
-import { , CURRENCIES } from '@/data/initialData';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link,useParams } from 'react-router-dom';
+import { useAuth } from '@/hooks/auth';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft,
@@ -16,43 +15,53 @@ import {
   CreditCard,
   FileText
 } from 'lucide-react';
-import type { Category,Transaction } from '@/types';
-const PAYMENT_METHODS = [
-  'Credit Card',
-  'Debit Card',
-  'Bank Transfer',
-  'Cash',
-  'PayPal',
-  'Crypto',
-];
+import type { Category, payment_methods, Transaction, TransactionCreate } from '@/types';
+import { LoadingTransaction } from '@/components/ui/loading';
 
 const QUICK_AMOUNTS = [10, 25, 50, 100, 250];
 
 interface TransactionProps {
-  categories: Category[];
-  paymentMethodProps:Transaction[];
+  categories?: Category[];
+  paymentMethods?: payment_methods[];
+  mode?: 'create' | 'edit';
+  transaction?: Transaction;
 }
 export default function TransactionAction(
-  {categories,paymentMethodProps}:TransactionProps
+  { mode = 'create',transaction }: TransactionProps
 ) {
+  const {id} = useParams(); 
   const navigate = useNavigate();
   const { user } = useAuth();
   const APP_URL = 'http://localhost:8000';
-
-  // Form State
-  const [type, setType] = useState<'EXPENSE' | 'INCOME'>('EXPENSE');
-  const [title, setTitle] = useState<string>('');
-  const [amount, setAmount] = useState<string>('');
-  const [currency, setCurrency] = useState<string>(user?.currency || 'USD');
-  const [category, setCategory] = useState<string>('cat-food');
-  const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [time, setTime] = useState<string>(
-    new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-  );
-  const [paymentMethod, setPaymentMethod] = useState<string>('Credit Card');
-  const [description, setDescription] = useState<string>('');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const fetchCategories =async () => {
+  const [isLoadingFetch, setIsLoadingFetch] = useState<boolean>(false);
+  const [transactionData, setTransactionData] = useState<TransactionCreate>(
+    {
+      amount: transaction?.amount??0,
+      title:transaction?.title??"",
+      type: transaction?.type??'EXPENSE',
+      currency: transaction?.currency??'USD',
+      category_id: transaction?.categories?.id??'',
+      date:transaction?.date??new Date().toISOString().split('T')[0],
+      payment_method_id: transaction?.payment_methods?.id??'',
+      description: transaction?.description??'',
+      status: transaction?.status??'PENDING',
+    }
+  );
+  useEffect(() => {
+    const fetchdata = async () => {
+        setIsLoadingFetch(true);
+        await fetchCategories();
+        await fetchPaymentMethods();
+        setIsLoadingFetch(false);
+      }
+      fetchdata();
+  }, []);
+  
+  const fetchCategories = async () => {
+    try{
     const token = localStorage.getItem('token');
     if (!token) {
       toast.error('Session expired. Please log in again.');
@@ -68,48 +77,54 @@ export default function TransactionAction(
       },
     });
     const data = await response.json();
-    
-  }
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-  // Sync category default when changing type
-  useEffect(() => {
-    if (type === 'EXPENSE') {
-      setCategory('cat-food');
-    } else {
-      setCategory('cat-salary');
+    if (response.ok) {
+      setCategories(data.categories);
+      
     }
-  }, [type]);
-
-  // Find category name for API
-  const categoryName = useMemo(() => {
-    const found = DEFAULT_CATEGORIES.find(
-      (c) => c.id === category || c.name.toLowerCase() === category.toLowerCase()
-    );
-    return found ? found.name : category;
-  }, [category]);
-
+  }catch(error){
+    console.error('Error fetching categories:', error);
+  }
+  };
+  const fetchPaymentMethods = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast.error('Session expired. Please log in again.');
+      navigate('/login');
+      return;
+    }
+    const response = await fetch(`${APP_URL}/api/payment-methods`, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    const data = await response.json();
+    if (response.ok) {
+      setPaymentMethods(data.payment_methods);
+    }
+  };
   const handleAddQuickAmount = (val: number) => {
-    const current = parseFloat(amount) || 0;
-    setAmount((current + val).toString());
+    const current = parseFloat(transactionData.amount.toString()) || 0;
+    setTransactionData({...transactionData,amount:(current + val)});
   };
 
   const setQuickDate = (daysAgo: number) => {
     const d = new Date();
     d.setDate(d.getDate() - daysAgo);
-    setDate(d.toISOString().split('T')[0]);
+    setTransactionData({...transactionData,date:d.toISOString().split('T')[0]});
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+    if (!transactionData.amount || isNaN(parseFloat(transactionData.amount.toString())) || parseFloat(transactionData.amount.toString()) <= 0) {
       toast.error('Please enter a valid amount greater than 0');
       return;
     }
 
-    if (!title.trim()) {
+    if (!transactionData.title.trim()) {
       toast.error('Please enter a title');
       return;
     }
@@ -121,21 +136,10 @@ export default function TransactionAction(
       return;
     }
 
-    setLoading(true);
-    try {
-      const payload = {
-        user_id: user?.id,
-        amount: parseFloat(amount),
-        type: type,
-        category: categoryName,
-        payment_method: paymentMethod,
-        description: description.trim() || title.trim(),
-        title: title.trim(),
-        currency: currency,
-        date: date,
-        time: time,
-      };
+    setLoading(true)
 
+    if(mode==='create'){
+      try {
       const response = await fetch(`${APP_URL}/api/transactions`, {
         method: 'POST',
         headers: {
@@ -143,14 +147,14 @@ export default function TransactionAction(
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(transactionData),
       });
 
       const data = await response.json();
 
       if (response.ok || data.status === 200 || data.status === 201) {
         toast.success(
-          `${type === 'INCOME' ? 'Income' : 'Expense'} recorded successfully`
+          `${transactionData.type === 'INCOME' ? 'Income' : 'Expense'} recorded successfully`
         );
         navigate('/transactions');
       } else {
@@ -162,10 +166,30 @@ export default function TransactionAction(
     } finally {
       setLoading(false);
     }
+    }
+    else if(mode==='edit'){
+      const response  = await fetch(`${APP_URL}/api/transactions/${id}`,{
+        method: 'PATCH',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(transactionData),
+      });
+      const data = await response.json();
+      if(response.ok || data.status === 200 || data.status === 201){
+        toast.success('Transaction updated successfully');
+        navigate(`/transactions/${id}`);
+      }else{
+        toast.error('Failed to update transaction');
+      }
+    }
+    
   };
 
-  const currencySymbol = CURRENCIES.find((c) => c.code === currency)?.symbol || '$';
-
+  const currencySymbol = '$';
+  if(isLoadingFetch) return (<LoadingTransaction hight={130}/>)
   return (
     <div style={{ maxWidth: '640px', margin: '0 auto', paddingBottom: '3rem' }}>
       {/* Top Header */}
@@ -248,7 +272,7 @@ export default function TransactionAction(
             {/* Expense Button */}
             <button
               type="button"
-              onClick={() => setType('EXPENSE')}
+              onClick={() => setTransactionData({...transactionData,type:'EXPENSE'})}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -257,14 +281,14 @@ export default function TransactionAction(
                 padding: '0.75rem 1rem',
                 borderRadius: 'var(--radius-md)',
                 border:
-                  type === 'EXPENSE'
+                  transactionData.type === 'EXPENSE'
                     ? '1.5px solid #ef4444'
                     : '1px solid var(--border-subtle)',
                 background:
-                  type === 'EXPENSE'
+                  transactionData.type === 'EXPENSE'
                     ? 'rgba(239, 68, 68, 0.12)'
                     : '#0a0a0a',
-                color: type === 'EXPENSE' ? '#ef4444' : 'var(--text-secondary)',
+                color:transactionData.type === 'EXPENSE' ? '#ef4444' : 'var(--text-secondary)',
                 fontSize: '0.9rem',
                 fontWeight: '700',
                 cursor: 'pointer',
@@ -278,7 +302,7 @@ export default function TransactionAction(
             {/* Income Button */}
             <button
               type="button"
-              onClick={() => setType('INCOME')}
+              onClick={() => setTransactionData({...transactionData,type:'INCOME'})}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -287,14 +311,14 @@ export default function TransactionAction(
                 padding: '0.75rem 1rem',
                 borderRadius: 'var(--radius-md)',
                 border:
-                  type === 'INCOME'
+                  transactionData.type === 'INCOME'
                     ? '1.5px solid #10b981'
                     : '1px solid var(--border-subtle)',
                 background:
-                  type === 'INCOME'
+                  transactionData.type === 'INCOME'
                     ? 'rgba(16, 185, 129, 0.12)'
                     : '#0a0a0a',
-                color: type === 'INCOME' ? '#10b981' : 'var(--text-secondary)',
+                color: transactionData.type === 'INCOME' ? '#10b981' : 'var(--text-secondary)',
                 fontSize: '0.9rem',
                 fontWeight: '700',
                 cursor: 'pointer',
@@ -325,12 +349,12 @@ export default function TransactionAction(
           <input
             type="text"
             placeholder={
-              type === 'EXPENSE'
+              transactionData.type === 'EXPENSE'
                 ? 'e.g. Supermarket, Netflix, Electricity'
                 : 'e.g. Tech Salary, Freelance project'
             }
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            value={transactionData.title}
+            onChange={(e) => setTransactionData({...transactionData,title:e.target.value})}
             style={{
               width: '100%',
               padding: '0.75rem 1rem',
@@ -394,8 +418,8 @@ export default function TransactionAction(
                 step="any"
                 min="0.01"
                 placeholder="0.00"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                value={transactionData.amount}
+                onChange={(e) => setTransactionData({...transactionData,amount:parseFloat(e.target.value)})}
                 onFocus={() => {
                   const el = document.getElementById('amount-box');
                   if (el) el.style.borderColor = 'var(--accent-primary)';
@@ -420,9 +444,9 @@ export default function TransactionAction(
             </div>
 
             {/* Currency Select */}
-            <select
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
+            <input
+              value={transactionData.currency}
+              onChange={(e) => setTransactionData({...transactionData,currency:e.target.value})}
               style={{
                 width: '100%',
                 padding: '0.75rem 0.85rem',
@@ -440,13 +464,9 @@ export default function TransactionAction(
               }}
               onFocus={(e) => (e.target.style.borderColor = 'var(--accent-primary)')}
               onBlur={(e) => (e.target.style.borderColor = 'var(--border-subtle)')}
-            >
-              {CURRENCIES.map((c) => (
-                <option key={c.code} value={c.code} style={{ background: '#111', color: '#fff' }}>
-                  {c.code} ({c.symbol})
-                </option>
-              ))}
-            </select>
+              disabled
+              placeholder={user?.currency}
+            />
           </div>
 
           {/* Quick Amount Pill Buttons */}
@@ -482,10 +502,10 @@ export default function TransactionAction(
                 +{val}
               </button>
             ))}
-            {amount && (
+            {transactionData.amount  && (
               <button
                 type="button"
-                onClick={() => setAmount('')}
+                onClick={() => setTransactionData({...transactionData,amount:0})}
                 style={{
                   padding: '0.25rem 0.5rem',
                   background: 'transparent',
@@ -520,8 +540,8 @@ export default function TransactionAction(
               Category
             </label>
             <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              value={transactionData.category_id}
+              onChange={(e) => setTransactionData({...transactionData,category_id:e.target.value})}
               style={{
                 width: '100%',
                 padding: '0.75rem 0.85rem',
@@ -540,7 +560,7 @@ export default function TransactionAction(
               onBlur={(e) => (e.target.style.borderColor = 'var(--border-subtle)')}
             >
               {categories.map((cat) => (
-                <option key={cat.id} value={cat.slug} style={{ background: '#111', color: '#fff' }}>
+                <option key={cat.id} value={cat.id} style={{ background: '#111', color: '#fff' }}>
                   {cat.name}
                 </option>
               ))}
@@ -562,8 +582,8 @@ export default function TransactionAction(
               Payment Method
             </label>
             <select
-              value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value)}
+              value={transactionData.payment_method_id}
+              onChange={(e) => setTransactionData({...transactionData,payment_method_id:e.target.value})}
               style={{
                 width: '100%',
                 padding: '0.75rem 0.85rem',
@@ -581,9 +601,9 @@ export default function TransactionAction(
               onFocus={(e) => (e.target.style.borderColor = 'var(--accent-primary)')}
               onBlur={(e) => (e.target.style.borderColor = 'var(--border-subtle)')}
             >
-              {PAYMENT_METHODS.map((pm) => (
-                <option key={pm} value={pm} style={{ background: '#111', color: '#fff' }}>
-                  {pm}
+              {paymentMethods.map((pm) => (
+                <option key={pm.id} value={pm.id} style={{ background: '#111', color: '#fff' }}>
+                  {pm.name}
                 </option>
               ))}
             </select>
@@ -640,8 +660,8 @@ export default function TransactionAction(
             </div>
             <input
               type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
+              value={transactionData.date}
+              onChange={(e) => setTransactionData({...transactionData,date:e.target.value})}
               style={{
                 width: '100%',
                 padding: '0.75rem 0.85rem',
@@ -656,40 +676,6 @@ export default function TransactionAction(
                 colorScheme: 'dark',
               }}
               required
-            />
-          </div>
-
-          <div>
-            <label
-              style={{
-                display: 'block',
-                fontSize: '0.775rem',
-                fontWeight: '700',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                color: 'var(--text-secondary)',
-                marginBottom: '0.4rem',
-              }}
-            >
-              Time
-            </label>
-            <input
-              type="time"
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.75rem 0.85rem',
-                background: '#090909',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: 'var(--radius-md)',
-                color: '#ffffff',
-                fontSize: '0.85rem',
-                outline: 'none',
-                boxSizing: 'border-box',
-                fontFamily: 'inherit',
-                colorScheme: 'dark',
-              }}
             />
           </div>
         </div>
@@ -712,8 +698,8 @@ export default function TransactionAction(
           <textarea
             rows={3}
             placeholder="Add any extra notes or reference..."
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            value={transactionData.description}
+            onChange={(e) => setTransactionData({...transactionData,description:e.target.value})}
             style={{
               width: '100%',
               padding: '0.75rem 0.85rem',
@@ -741,8 +727,8 @@ export default function TransactionAction(
             style={{
               flex: 1,
               padding: '0.8rem 1.5rem',
-              background: type === 'EXPENSE' ? '#ef4444' : 'var(--accent-primary)',
-              color: type === 'EXPENSE' ? '#ffffff' : '#000000',
+              background:transactionData.type === 'EXPENSE' ? '#ef4444' : 'var(--accent-primary)',
+              color:transactionData.type === 'EXPENSE' ? '#ffffff' : '#000000',
               border: 'none',
               borderRadius: 'var(--radius-md)',
               fontSize: '0.9rem',
@@ -754,7 +740,7 @@ export default function TransactionAction(
               gap: '0.5rem',
               transition: 'all 0.15s ease',
               boxShadow:
-                type === 'EXPENSE'
+                transactionData.type === 'EXPENSE'
                   ? '0 0 16px rgba(239, 68, 68, 0.25)'
                   : 'var(--accent-glow)',
             }}
@@ -767,7 +753,7 @@ export default function TransactionAction(
             ) : (
               <>
                 <CheckCircle2 size={16} />
-                <span>Save {type === 'INCOME' ? 'Income' : 'Expense'}</span>
+                <span>Save {transactionData.type === 'INCOME' ? 'Income' : 'Expense'}</span>
               </>
             )}
           </button>
